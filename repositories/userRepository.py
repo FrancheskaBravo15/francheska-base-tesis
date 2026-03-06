@@ -31,7 +31,7 @@ class UserRepository:
     def find_by_id(cls, user_id: str) -> Optional[UserModel]:
         #Buscar datos por id
         collection = cls._get_collection()
-        data = collection.find_one({"_id": user_id})
+        data = collection.find_one({"_id": ObjectId(user_id)})
         if data:
             return UserModel.from_dict(data)
         return None

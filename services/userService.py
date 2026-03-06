@@ -56,3 +56,56 @@ class UserService:
         return{
             "users": users
         }
+    
+    @staticmethod
+    def get_user_by_id(user_id: str) -> Dict:
+        #Obtener usuario por id
+        try:
+
+            user = UserRepository.find_by_id(user_id)
+            if not user:
+                return{
+                    "success": False,
+                    "message": "Usuario no encontrado"
+                }
+            person = PersonRepository.find_by_user_id(user_id)
+
+            return {
+                "success": True,
+                "message": "Usuario encontrado",
+                "user": person
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error al buscar el usuario: {e}"
+            }
+    
+    @staticmethod
+    def login_user(email: str, password: str) -> Dict:
+        #Flujo de autenticación
+
+        try:
+            
+            user = UserRepository.find_by_email(email)
+
+            if not user:
+                return {
+                    "success": False,
+                    "message": "Email no existente"
+                }
+            if not check_password_hash(user.password, password):
+                return {
+                    "success": False,
+                    "message": "Contraseña incorrecta"
+                }
+            return{
+                "success": True,
+                "message": "Inicio de sesión exitoso",
+                "user_id": user.id
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Error al iniciar sesión: {e}"
+            }

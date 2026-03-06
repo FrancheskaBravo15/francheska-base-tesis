@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+ 
+{% block body %}
+ 
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h4 class="card-title text-center mb-4">Mi Perfil</h4>
+ 
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Identificación</label>
+                    <p class="form-control-plaintext">{{ current_user.identification }}</p>
+                </div>
+ 
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nombre</label>
+                    <p class="form-control-plaintext">{{ current_user.first_name }}</p>
+                </div>
+ 
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Apellido</label>
+                    <p class="form-control-plaintext">{{ current_user.last_name }}</p>
+                </div>
+ 
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Correo Electrónico</label>
+                    <p class="form-control-plaintext">{{ current_user.email }}</p>
+                </div>
+ 
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Rol</label>
+                    <p class="form-control-plaintext text-capitalize">{{ current_user.role }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+ 
+{% endblock %}

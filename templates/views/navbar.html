@@ -1,24 +1,50 @@
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-        <a class="navbar-brand" href="#">Instituto Tecnológico Bolivar Madero Vargas</a>
+        <a class="navbar-brand" href="/">Instituto Tecnológico Bolivar Madero Vargas</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
             aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-
+ 
         <div class="collapse navbar-collapse" id="mainNavbar">
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <a class="nav-link active" href="/">Inicio</a>
+                    <a class="nav-link {{ 'active' if request.path == '/' }}" href="/">Inicio</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link active" href="/about">Acerca de Nosotros</a>
+                    <a class="nav-link {{ 'active' if request.path == '/about' }}" href="/about">Acerca de Nosotros</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#loginSection">Iniciar Sesión</a>
-                </li>
+ 
+                {% if current_user %}
+                    {% if current_user.role in ('admin', 'operator') %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.path.startswith('/admin') }}" href="">Panel de Administración</a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.path == '/users/profile' }}" href="{{ url_for('users.profile') }}">
+                            Hola, {{ current_user.first_name }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <form method="POST" action="{{ url_for('users.logout') }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="nav-link btn btn-link" style="text-decoration: none;">
+                                Cerrar Sesión
+                            </button>
+                        </form>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.path == '/users/login' }}" href="{{ url_for('users.login') }}">Iniciar Sesión</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.path == '/users/register' }}" href="{{ url_for('users.register') }}">Registrarse</a>
+                    </li>
+                {% endif %}
             </ul>
         </div>
     </div>
 </nav>
+ 
