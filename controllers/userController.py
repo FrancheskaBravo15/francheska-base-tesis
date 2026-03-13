@@ -35,7 +35,11 @@ def register():
             return redirect(url_for('index.indexRoute'))
         else:
             flash(result['message'], 'danger')
-            return render_template('/views/users/register.html')
+            return render_template('/views/users/register.html',
+                                   identification = identification,
+                                   first_name = first_name,
+                                   last_name = last_name,
+                                   email = email)
 
 @user_bp.route('/login', methods=['GET', 'POST']) # /users/login
 @guest_only   
