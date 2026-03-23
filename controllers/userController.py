@@ -25,11 +25,12 @@ def register():
         identification = request.form.get('identification', '').strip()
         first_name = request.form.get('first_name', '').strip()
         last_name = request.form.get('last_name', '').strip()
+        phone = request.form.get('phone', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
-        phone = request.form.get('phone', '').strip()
 
-        result = UserService.create_user(identification,first_name,last_name,email,password,phone)
+
+        result = UserService.create_user(identification,first_name,last_name,phone,email,password)
 
         if(result['success']):
             flash(result['message'], 'success')
@@ -40,8 +41,9 @@ def register():
                                    identification = identification,
                                    first_name = first_name,
                                    last_name = last_name,
-                                   email = email,
-                                   phone = phone)
+                                   phone = phone,
+                                   email = email)
+                                   
 
 @user_bp.route('/login', methods=['GET', 'POST']) # /users/login
 @guest_only   

@@ -1,54 +1,32 @@
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-        <a class="navbar-brand" href="/">Shirley Buenaño</a>
-
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+        <a class="navbar-brand" href="/">Centro Estetica y Belleza Shirley Buenaño</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+            aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
-
+ 
         <div class="collapse navbar-collapse" id="mainNavbar">
-            <ul class="navbar-nav ms-auto">
-
-                <!-- Inicio -->
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                 <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.path == '/' }}" href="/">Inicio</a>
                 </li>
-                                <!-- about -->
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.path == '/about' }}" href="/about">Nosotros</a>
+                    <a class="nav-link {{ 'active' if request.path == '/about' }}" href="/about">Acerca de Nosotros</a>
                 </li>
-
-                <!-- Si está logueado -->
-                {% if current_user.is_authenticated %}
-
-                    <!-- Panel según rol -->
-                    {% if current_user.role in ('gerente', 'administrador') %}
+ 
+                {% if current_user %}
+                    {% if current_user.role in ('admin', 'operator') %}
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin">Panel de Administración</a>
+                        <a class="nav-link {{ 'active' if request.path.startswith('/admin') }}" href="">Panel de Administración</a>
                     </li>
                     {% endif %}
-
-                    {% if current_user.role == 'personal' %}
                     <li class="nav-item">
-                        <a class="nav-link" href="/empleado">Mi Agenda</a>
-                    </li>
-                    {% endif %}
-
-                    {% if current_user.role == 'cliente' %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/cliente">Mis Citas</a>
-                    </li>
-                    {% endif %}
-
-                    <!-- Usuario -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('users.profile') }}">
+                        <a class="nav-link {{ 'active' if request.path == '/users/profile' }}" href="{{ url_for('users.profile') }}">
                             Hola, {{ current_user.first_name }}
                         </a>
                     </li>
-
-                    <!-- Logout -->
                     <li class="nav-item">
                         <form method="POST" action="{{ url_for('users.logout') }}" class="d-inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -57,26 +35,16 @@
                             </button>
                         </form>
                     </li>
-
                 {% else %}
-
-                    <!-- Login -->
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.path == '/users/login' }}" href="{{ url_for('users.login') }}">
-                            Iniciar Sesión
-                        </a>
+                        <a class="nav-link {{ 'active' if request.path == '/users/login' }}" href="{{ url_for('users.login') }}">Iniciar Sesión</a>
                     </li>
-
-                    <!-- Registro -->
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.path == '/users/register' }}" href="{{ url_for('users.register') }}">
-                            Registrarse
-                        </a>
+                        <a class="nav-link {{ 'active' if request.path == '/users/register' }}" href="{{ url_for('users.register') }}">Registrarse</a>
                     </li>
-
                 {% endif %}
-
             </ul>
         </div>
     </div>
 </nav>
+ 

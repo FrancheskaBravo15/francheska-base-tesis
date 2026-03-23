@@ -21,6 +21,7 @@ def seed_admin_command():
     first_name = os.getenv("ADMIN_FIRST_NAME", "Administrador")
     last_name  = os.getenv("ADMIN_LAST_NAME", "Sistema")
     identification = os.getenv("ADMIN_IDENTIFICATION", "0000000000")
+    phone = os.getenv("ADMIN_PHONE", "0000000000")
  
     if not email or not password:
         click.echo("Error: ADMIN_EMAIL y ADMIN_PASSWORD deben estar definidos en el .env")
@@ -35,7 +36,8 @@ def seed_admin_command():
             user_id        = user_id,
             identification = identification,
             first_name     = first_name,
-            last_name      = last_name
+            last_name      = last_name,
+            phone          = phone
         )
         PersonRepository.create(person)
  

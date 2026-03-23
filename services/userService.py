@@ -13,7 +13,7 @@ class UserService:
     def create_user(identification: str, first_name: str, last_name: str, phone: str, email: str, password: str) -> Dict:
         # Crea un nuevo usuario con validaciones
 
-        errors = validate_registration_data(identification, first_name, last_name, email, password, phone)
+        errors = validate_registration_data(identification, first_name, last_name, phone, email, password)
 
         if errors:
             return {
@@ -41,7 +41,7 @@ class UserService:
             user = UserModel(email, password=hashed_password, role="client")
             user_id = UserRepository.create(user)
             #Creación del person
-            person = PersonModel(user_id,identification,first_name,last_name)
+            person = PersonModel(user_id,identification,first_name,last_name,phone)
             PersonRepository.create(person)
 
             return {
