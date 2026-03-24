@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Servicios - Admin{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0"><i class="bi bi-scissors me-2 text-danger"></i>Gestión de Servicios</h3>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('admin.create_service') }}" class="btn btn-danger btn-sm">
+            <i class="bi bi-plus-lg me-1"></i>Nuevo Servicio
+        </a>
+        <a href="{{ url_for('admin.panel') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Volver
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead style="background-color:#fce4ec;">
+                    <tr>
+                        <th class="ps-3">Servicio</th>
+                        <th>Categoría</th>
+                        <th>Precio</th>
+                        <th>Duración</th>
+                        <th>Estado</th>
+                        <th class="text-center pe-3">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for service in services %}
+                    <tr>
+                        <td class="ps-3">
+                            <div class="d-flex align-items-center gap-2">
+                                {% if service.image_url %}
+                                    <img src="{{ service.image_url }}" width="40" height="40"
+                                         class="rounded" style="object-fit:cover;" alt="">
+                                {% else %}
+                                    <span class="rounded bg-light d-inline-flex align-items-center justify-content-center border"
+                                          style="width:40px;height:40px;">
+                                        <i class="bi bi-scissors text-muted"></i>
+                                    </span>
+                                {% endif %}
+                                <div>
+                                    <div class="fw-semibold">{{ service.name }}</div>
+                                    <div class="text-muted small">{{ service.description[:50] if service.description else '' }}{% if service.description and service.description|length > 50 %}...{% endif %}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-danger-subtle text-danger border border-danger-subtle">{{ service.category }}</span></td>
+                        <td class="fw-semibold text-danger">${{ "%.2f"|format(service.price) }}</td>
+                        <td><i class="bi bi-clock me-1 text-muted"></i>{{ service.duration_minutes }} min</td>
+                        <td>
+                            {% if service.is_active %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">Activo</span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('admin.edit_service', service_id=service.id) }}"
+                                   class="btn btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('admin.delete_service', service_id=service.id) }}"
+                                      class="d-inline"
+                                      onsubmit="return confirm('¿Eliminar este servicio permanentemente?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="btn btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">
+                            <i class="bi bi-scissors" style="font-size:2rem;"></i>
+                            <p class="mt-2 mb-0">No hay servicios. <a href="{{ url_for('admin.create_service') }}">Crear primero</a></p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

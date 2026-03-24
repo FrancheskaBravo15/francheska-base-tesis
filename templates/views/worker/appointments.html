@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Mis Citas - Trabajadora{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0"><i class="bi bi-calendar-check me-2 text-danger"></i>Historial de Citas</h3>
+    <div class="d-flex align-items-center gap-3">
+        <span class="fw-bold text-success">
+            <i class="bi bi-cash-coin me-1"></i>Recaudado: ${{ "%.2f"|format(total_earned) }}
+        </span>
+        <a href="{{ url_for('worker.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Volver
+        </a>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="d-flex gap-2 mb-4 flex-wrap">
+    <button class="btn btn-sm btn-danger filter-btn active" data-filter="all">Todas</button>
+    <button class="btn btn-sm btn-outline-success filter-btn" data-filter="confirmada">Confirmadas</button>
+    <button class="btn btn-sm btn-outline-secondary filter-btn" data-filter="completada">Completadas</button>
+    <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="cancelada">Canceladas</button>
+</div>
+
+{% if appointments %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead style="background-color:#fce4ec;">
+                        <tr>
+                            <th class="ps-3">Fecha</th>
+                            <th>Horario</th>
+                            <th>Servicio</th>
+                            <th>Cliente</th>
+                            <th>Total</th>
+                            <th>Estado</th>
+                            <th class="pe-3 text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appt in appointments %}
+                        <tr data-status="{{ appt.status }}">
+                            <td class="ps-3 fw-semibold">{{ appt.date }}</td>
+                            <td class="text-muted small">{{ appt.start_time }} - {{ appt.end_time }}</td>
+                            <td>{{ appt.service_name }}</td>
+                            <td>{{ appt.client_name }}</td>
+                            <td class="fw-bold text-danger">${{ "%.2f"|format(appt.total_price) }}</td>
+                            <td>
+                                {% if appt.status == 'confirmada' %}
+                                    <span class="badge bg-success">Confirmada</span>
+                                {% elif appt.status == 'completada' %}
+                                    <span class="badge bg-secondary">Completada</span>
+                                {% elif appt.status == 'cancelada' %}
+                                    <span class="badge bg-danger">Cancelada</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center pe-3">
+                                {% if appt.status == 'confirmada' %}
+                                    <form method="POST" action="{{ url_for('worker.complete_appointment', appointment_id=appt.appointment_id) }}"
+                                          onsubmit="return confirm('¿Marcar como completada?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button class="btn btn-sm btn-success">
+                                            <i class="bi bi-check-circle me-1"></i>Completar
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="text-muted small">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-calendar-x" style="font-size:3rem;"></i>
+        <p class="mt-3">No tienes historial de citas aún.</p>
+        <a href="{{ url_for('worker.schedule') }}" class="btn btn-outline-danger">
+            <i class="bi bi-clock me-1"></i>Configurar mi horario
+        </a>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active', 'btn-danger', 'btn-success', 'btn-secondary'));
+        btn.classList.add('active');
+        const filter = btn.dataset.filter;
+        document.querySelectorAll('tbody tr[data-status]').forEach(row => {
+            row.style.display = (filter === 'all' || row.dataset.status === filter) ? '' : 'none';
+        });
+    });
+});
+</script>
+{% endblock %}

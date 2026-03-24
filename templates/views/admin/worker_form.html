@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Nueva Trabajadora - Admin{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0"><i class="bi bi-person-badge me-2 text-danger"></i>Nueva Trabajadora</h3>
+            <a href="{{ url_for('admin.workers') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Volver
+            </a>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header" style="background-color:#c2185b;">
+                <h6 class="mb-0 text-white"><i class="bi bi-person-fill me-2"></i>Datos Personales y de Acceso</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="first_name" required
+                                   value="{{ form_data.first_name if form_data else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Apellido <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="last_name" required
+                                   value="{{ form_data.last_name if form_data else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Cédula <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="identification" required
+                                   maxlength="10" pattern="\d{10}"
+                                   value="{{ form_data.identification if form_data else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Teléfono <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="phone" required
+                                   maxlength="10"
+                                   value="{{ form_data.phone if form_data else '' }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Correo Electrónico <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" name="email" required
+                               value="{{ form_data.email if form_data else '' }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Contraseña <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" name="password" required minlength="8">
+                        <div class="form-text">Mínimo 8 caracteres.</div>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Especialidades <span class="text-danger">*</span></label>
+                        <div class="form-text mb-2">Selecciona las especialidades de la trabajadora:</div>
+                        <div class="row g-2">
+                            {% set sp_list = ['Manicura', 'Pedicura', 'Cabello', 'Maquillaje', 'Facial', 'Depilación', 'Masajes', 'Uñas Acrílicas', 'Cejas y Pestañas'] %}
+                            {% for sp in sp_list %}
+                            <div class="col-6 col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="specialties"
+                                           value="{{ sp }}" id="sp_{{ loop.index }}"
+                                           {% if categories and sp in categories %}checked{% endif %}>
+                                    <label class="form-check-label" for="sp_{{ loop.index }}">{{ sp }}</label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% for cat in categories %}
+                            {% if cat not in sp_list %}
+                            <div class="mt-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="specialties"
+                                           value="{{ cat }}" checked>
+                                    <label class="form-check-label">{{ cat }}</label>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Biografía / Descripción</label>
+                        <textarea class="form-control" name="bio" rows="2"
+                                  placeholder="Años de experiencia, especialización, etc.">{{ form_data.bio if form_data else '' }}</textarea>
+                    </div>
+
+                    <div class="alert alert-info small">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Después de crear la trabajadora, podrás configurar su <strong>horario de disponibilidad</strong> desde la lista de trabajadoras.
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger px-4">
+                            <i class="bi bi-person-plus me-2"></i>Crear Trabajadora
+                        </button>
+                        <a href="{{ url_for('admin.workers') }}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,53 +1,125 @@
 {% extends 'base.html' %}
 
+{% block title %}Inicio - Centro de Estética Shirley Buenaño{% endblock %}
+
 {% block body %}
-
-<!-- Hero Section -->
-<section class="bg-light py-5">
-    <div class="container text-center">
-        <h1 class="display-5 fw-bold">Centro de Estética, Belleza y Moda "Shirley Buenaño"</h1>
-        <p class="lead mt-3">
-            Agenda tus citas de manera rápida y sencilla y disfruta de nuestros servicios de belleza profesional.
-        </p>
-        <a href="{{ url_for('users.login') }}" class="btn btn-primary btn-lg mt-3">
-            Agendar Cita
+<!-- Hero -->
+<div class="rounded-4 text-white text-center p-5 mb-5" style="background: linear-gradient(135deg, #c2185b, #880e4f);">
+    <h1 class="display-5 fw-bold mb-3">
+        <i class="bi bi-stars me-2"></i>Bienvenida a Shirley Buenaño
+    </h1>
+    <p class="lead mb-4">Centro de Estética, Belleza y Moda. Reserva tu cita en minutos y luce radiante.</p>
+    <div class="d-flex justify-content-center gap-3 flex-wrap">
+        <a href="{{ url_for('services.catalog') }}" class="btn btn-light btn-lg px-4">
+            <i class="bi bi-scissors me-2"></i>Ver Servicios
         </a>
+        {% if not current_user %}
+            <a href="{{ url_for('users.register') }}" class="btn btn-outline-light btn-lg px-4">
+                <i class="bi bi-person-plus me-2"></i>Crear Cuenta
+            </a>
+        {% endif %}
     </div>
-</section>
+</div>
 
-<!-- Sobre el Centro -->
-<section class="py-5" id="aboutProgram">
-    <div class="container">
-        <div class="row align-items-center">
-            
-            <div class="col-md-6">
-                <h2 class="fw-bold">¿Por qué elegirnos?</h2>
-                <p class="mt-3">
-                    En el centro de estética Shirley Buenaño ofrecemos servicios de belleza con altos estándares
-                    de calidad, utilizando productos profesionales y técnicas actualizadas.
-                </p>
-                <p>
-                    Nuestro objetivo es brindar una experiencia única a cada cliente, garantizando
-                    bienestar, confianza y satisfacción.
-                </p>
-            </div>
+<!-- Categorías -->
+{% if categories %}
+<div class="mb-5">
+    <h4 class="fw-bold mb-3"><i class="bi bi-grid me-2 text-danger"></i>Categorías</h4>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{{ url_for('services.catalog') }}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-grid-fill me-1"></i>Todas
+        </a>
+        {% for cat in categories %}
+            <a href="{{ url_for('services.catalog', category=cat) }}" class="btn btn-outline-secondary btn-sm">
+                {{ cat }}
+            </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
-            <div class="col-md-6">
-                <div class="card shadow-sm">
+<!-- Servicios destacados -->
+<h4 class="fw-bold mb-4"><i class="bi bi-star me-2 text-danger"></i>Servicios Destacados</h4>
+{% if services %}
+    <div class="row g-4 mb-4">
+        {% for service in services %}
+            <div class="col-sm-6 col-lg-4">
+                <div class="card h-100 shadow-sm border-0">
+                    {% if service.image_url %}
+                        <img src="{{ service.image_url }}" class="card-img-top" alt="{{ service.name }}"
+                             style="height:180px;object-fit:cover;">
+                    {% else %}
+                        <div class="d-flex align-items-center justify-content-center"
+                             style="height:180px;background-color:#fce4ec;">
+                            <i class="bi bi-scissors text-danger" style="font-size:3rem;"></i>
+                        </div>
+                    {% endif %}
                     <div class="card-body">
-                        <h5 class="card-title">Nuestros servicios</h5>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item">Corte y peinado</li>
-                            <li class="list-group-item">Manicure y pedicure</li>
-                            <li class="list-group-item">Tratamientos faciales</li>
-                            <li class="list-group-item">Maquillaje profesional</li>
-                        </ul>
+                        <span class="badge mb-2" style="background-color:#c2185b;">{{ service.category }}</span>
+                        <h6 class="card-title fw-bold">{{ service.name }}</h6>
+                        <p class="card-text text-muted small">{{ service.description[:80] if service.description else '' }}{% if service.description and service.description|length > 80 %}...{% endif %}</p>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <div>
+                                <span class="fw-bold text-danger">${{ "%.2f"|format(service.price) }}</span>
+                                <small class="text-muted d-block"><i class="bi bi-clock me-1"></i>{{ service.duration_minutes }} min</small>
+                            </div>
+                            <a href="{{ url_for('services.detail', service_id=service.id) }}"
+                               class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-eye me-1"></i>Ver
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
+        {% endfor %}
+    </div>
+    <div class="text-center mb-5">
+        <a href="{{ url_for('services.catalog') }}" class="btn btn-danger px-4">
+            <i class="bi bi-grid me-2"></i>Ver Todos los Servicios
+        </a>
+    </div>
+{% else %}
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-scissors" style="font-size:3rem;"></i>
+        <p class="mt-3">Próximamente agregaremos nuestros servicios.</p>
+        {% if current_user and current_user.role == 'admin' %}
+            <a href="{{ url_for('admin.create_service') }}" class="btn btn-danger mt-2">
+                <i class="bi bi-plus me-1"></i>Agregar Servicio
+            </a>
+        {% endif %}
+    </div>
+{% endif %}
 
+<!-- Beneficios -->
+<div class="row g-4 mt-2">
+    <div class="col-12"><h4 class="fw-bold"><i class="bi bi-check-circle me-2 text-danger"></i>¿Por qué elegirnos?</h4></div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="text-center p-3 rounded-3 bg-white shadow-sm h-100">
+            <i class="bi bi-calendar-check text-danger" style="font-size:2rem;"></i>
+            <h6 class="fw-bold mt-2">Reserva Fácil</h6>
+            <p class="small text-muted mb-0">Agenda tu cita en línea en cualquier momento del día.</p>
         </div>
     </div>
-</section>
-
+    <div class="col-sm-6 col-lg-3">
+        <div class="text-center p-3 rounded-3 bg-white shadow-sm h-100">
+            <i class="bi bi-award text-danger" style="font-size:2rem;"></i>
+            <h6 class="fw-bold mt-2">Especialistas</h6>
+            <p class="small text-muted mb-0">Profesionales certificadas en cada área de belleza.</p>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="text-center p-3 rounded-3 bg-white shadow-sm h-100">
+            <i class="bi bi-shield-check text-danger" style="font-size:2rem;"></i>
+            <h6 class="fw-bold mt-2">Pago Seguro</h6>
+            <p class="small text-muted mb-0">Transacciones protegidas y confiables con Payphone.</p>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="text-center p-3 rounded-3 bg-white shadow-sm h-100">
+            <i class="bi bi-star text-danger" style="font-size:2rem;"></i>
+            <h6 class="fw-bold mt-2">Calidad Premium</h6>
+            <p class="small text-muted mb-0">Productos y técnicas de primera calidad garantizada.</p>
+        </div>
+    </div>
+</div>
 {% endblock %}

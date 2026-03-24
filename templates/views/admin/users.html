@@ -1,6 +1,88 @@
 {% extends 'base.html' %}
- 
+{% block title %}Usuarios - Admin{% endblock %}
+
 {% block body %}
- 
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0"><i class="bi bi-people me-2 text-danger"></i>Gestión de Usuarios</h3>
+    <a href="{{ url_for('admin.panel') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Volver
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead style="background-color:#fce4ec;">
+                    <tr>
+                        <th class="ps-3">Usuario</th>
+                        <th>Correo</th>
+                        <th>Cédula</th>
+                        <th>Teléfono</th>
+                        <th>Rol</th>
+                        <th>Estado</th>
+                        <th class="text-center pe-3">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td class="ps-3">
+                            <div class="d-flex align-items-center gap-2">
+                                {% if user.profile_photo %}
+                                    <img src="{{ user.profile_photo }}" width="36" height="36"
+                                         class="rounded-circle" style="object-fit:cover;" alt="">
+                                {% else %}
+                                    <span class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center border"
+                                          style="width:36px;height:36px;">
+                                        <i class="bi bi-person text-muted"></i>
+                                    </span>
+                                {% endif %}
+                                <span class="fw-semibold">{{ user.first_name }} {{ user.last_name }}</span>
+                            </div>
+                        </td>
+                        <td class="text-muted small">{{ user.email }}</td>
+                        <td class="text-muted small">{{ user.identification }}</td>
+                        <td class="text-muted small">{{ user.phone }}</td>
+                        <td>
+                            <span class="badge {% if user.role == 'admin' %}bg-danger{% elif user.role == 'worker' %}bg-success{% else %}bg-primary{% endif %}">
+                                {{ user.role }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if user.is_active %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">Activo</span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center pe-3">
+                            {% if user.role != 'admin' %}
+                                <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}"
+                                      class="d-inline"
+                                      onsubmit="return confirm('¿Confirmas cambiar el estado de este usuario?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="btn btn-sm {% if user.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+                                        <i class="bi bi-{% if user.is_active %}pause{% else %}play{% endif %}-circle me-1"></i>
+                                        {% if user.is_active %}Desactivar{% else %}Activar{% endif %}
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5">
+                            <i class="bi bi-people" style="font-size:2rem;"></i>
+                            <p class="mt-2 mb-0">No hay usuarios registrados</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 {% endblock %}
- 

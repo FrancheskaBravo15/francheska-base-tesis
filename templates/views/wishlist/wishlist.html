@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Mis Favoritos - Shirley Buenaño{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0"><i class="bi bi-heart-fill me-2 text-danger"></i>Mis Favoritos</h3>
+    <a href="{{ url_for('services.catalog') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-scissors me-1"></i>Explorar Servicios
+    </a>
+</div>
+
+{% if services %}
+    <div class="row g-4">
+        {% for service in services %}
+            <div class="col-sm-6 col-lg-4">
+                <div class="card h-100 shadow-sm border-0">
+                    {% if service.image_url %}
+                        <img src="{{ service.image_url }}" class="card-img-top" alt="{{ service.name }}"
+                             style="height:180px;object-fit:cover;">
+                    {% else %}
+                        <div class="d-flex align-items-center justify-content-center"
+                             style="height:180px;background-color:#fce4ec;">
+                            <i class="bi bi-scissors text-danger" style="font-size:3rem;"></i>
+                        </div>
+                    {% endif %}
+                    <div class="card-body d-flex flex-column">
+                        <span class="badge mb-2" style="background-color:#c2185b;">{{ service.category }}</span>
+                        <h6 class="card-title fw-bold">{{ service.name }}</h6>
+                        <p class="card-text text-muted small flex-grow-1">{{ service.description[:80] if service.description else '' }}{% if service.description and service.description|length > 80 %}...{% endif %}</p>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="fw-bold text-danger">${{ "%.2f"|format(service.price) }}</span>
+                            <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ service.duration_minutes }} min</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('services.detail', service_id=service.id) }}"
+                               class="btn btn-sm btn-outline-danger flex-fill">
+                                <i class="bi bi-calendar-plus me-1"></i>Reservar
+                            </a>
+                            <form method="POST" action="{{ url_for('wishlist.toggle') }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="service_id" value="{{ service.id }}">
+                                <button class="btn btn-sm btn-danger" title="Quitar de favoritos">
+                                    <i class="bi bi-heart-fill"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-heart" style="font-size:4rem;"></i>
+        <h5 class="mt-4">Tu lista de favoritos está vacía</h5>
+        <p>Agrega servicios a favoritos para encontrarlos fácilmente.</p>
+        <a href="{{ url_for('services.catalog') }}" class="btn btn-danger mt-2">
+            <i class="bi bi-scissors me-2"></i>Explorar Servicios
+        </a>
+    </div>
+{% endif %}
+{% endblock %}

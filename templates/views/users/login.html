@@ -1,41 +1,59 @@
 {% extends 'base.html' %}
- 
+{% block title %}Iniciar Sesión - Shirley Buenaño{% endblock %}
+
 {% block body %}
- 
 <div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h4 class="card-title text-center mb-4">Iniciar Sesión</h4>
- 
+    <div class="col-md-5 col-lg-4">
+        <div class="text-center mb-4">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                 style="width:70px;height:70px;background:#fce4ec;">
+                <i class="bi bi-person-lock text-danger" style="font-size:2rem;"></i>
+            </div>
+            <h4 class="fw-bold">Iniciar Sesión</h4>
+            <p class="text-muted small">Bienvenida de vuelta</p>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
                 <form method="POST" action="{{ url_for('users.login') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
- 
+
                     <div class="mb-3">
-                        <label for="email" class="form-label">Correo Electrónico</label>
-                        <input type="email" class="form-control" id="email" name="email" value="{{ email | default('') }}" required>
+                        <label class="form-label fw-semibold">Correo Electrónico</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="bi bi-envelope text-muted"></i>
+                            </span>
+                            <input type="email" class="form-control border-start-0" name="email"
+                                   value="{{ email | default('') }}" placeholder="tu@correo.com" required>
+                        </div>
                     </div>
- 
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Contraseña</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Contraseña</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="bi bi-lock text-muted"></i>
+                            </span>
+                            <input type="password" class="form-control border-start-0" name="password"
+                                   placeholder="••••••••" required>
+                        </div>
                     </div>
- 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">
-                            Iniciar Sesión
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Ingresar
                         </button>
                     </div>
- 
-                    <div class="text-center mt-3">
-                        <small>¿No tienes cuenta? <a href="{{ url_for('users.register') }}">Regístrate aquí</a></small>
+
+                    <div class="text-center">
+                        <small class="text-muted">¿No tienes cuenta?
+                            <a href="{{ url_for('users.register') }}" class="text-danger fw-semibold text-decoration-none">Regístrate aquí</a>
+                        </small>
                     </div>
- 
                 </form>
             </div>
         </div>
     </div>
 </div>
- 
 {% endblock %}
- 
