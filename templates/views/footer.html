@@ -1,31 +1,49 @@
 <!-- Footer -->
-<footer class="text-white py-4 mt-5" style="background-color: #880e4f;">
+<footer class="text-white py-4 mt-5" style="background: linear-gradient(135deg, #b388ff, #880e4f);">
     <div class="container">
         <div class="row text-center text-md-start">
+            <!-- Logo / descripción -->
             <div class="col-md-4 mb-3">
                 <h6 class="fw-bold"><i class="bi bi-scissors me-2"></i>Shirley Buenaño</h6>
                 <p class="small mb-0">Centro de Estética, Belleza y Moda</p>
                 <p class="small">Belleza, cuidado y bienestar en un solo lugar.</p>
             </div>
+            <!-- Accesos rápidos -->
             <div class="col-md-4 mb-3">
                 <h6 class="fw-bold">Accesos Rápidos</h6>
                 <ul class="list-unstyled small">
-                    <li><a href="{{ url_for('services.catalog') }}" class="text-white-50 text-decoration-none">
-                        <i class="bi bi-chevron-right me-1"></i>Nuestros Servicios</a></li>
-                    <li><a href="{{ url_for('index.aboutRoute') }}" class="text-white-50 text-decoration-none">
-                        <i class="bi bi-chevron-right me-1"></i>Sobre Nosotros</a></li>
-                    <li><a href="{{ url_for('users.register') }}" class="text-white-50 text-decoration-none">
-                        <i class="bi bi-chevron-right me-1"></i>Crear Cuenta</a></li>
+                    <li>
+                        <a href="{{ url_for('services.catalog') }}" class="text-white-50 text-decoration-none hover-white">
+                            <i class="bi bi-chevron-right me-1"></i>Nuestros Servicios</a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('index.aboutRoute') }}" class="text-white-50 text-decoration-none hover-white">
+                            <i class="bi bi-chevron-right me-1"></i>Sobre Nosotros</a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('users.register') }}" class="text-white-50 text-decoration-none hover-white">
+                            <i class="bi bi-chevron-right me-1"></i>Crear Cuenta</a>
+                    </li>
                 </ul>
             </div>
+            <!-- Contacto -->
             <div class="col-md-4 mb-3">
                 <h6 class="fw-bold">Contacto</h6>
                 <p class="small mb-1"><i class="bi bi-geo-alt me-2"></i>Machala - Ecuador</p>
-                <p class="small mb-1"><i class="bi bi-telephone me-2"></i>0999 999 999</p>
+                <p class="small mb-1"><i class="bi bi-telephone me-2"></i>096 754 2330</p>
                 <p class="small"><i class="bi bi-envelope me-2"></i>shirley@belleza.com</p>
             </div>
         </div>
         <hr class="border-light opacity-25">
-        <p class="text-center small mb-0 text-white-50">© 2026 Centro de Estética Shirley Buenaño. Todos los derechos reservados.</p>
+        <p class="text-center small mb-0 text-white-50">
+            © 2026 Centro de Estética Shirley Buenaño. Todos los derechos reservados.
+        </p>
     </div>
 </footer>
+
+<!-- CSS extra para hover -->
+<style>
+    .hover-white:hover {
+        color: #fff !important;
+    }
+</style>

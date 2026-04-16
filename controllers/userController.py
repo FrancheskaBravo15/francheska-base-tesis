@@ -27,6 +27,21 @@ def inject_cart_count():
             pass
     return {"cart_count": 0}
 
+@user_bp.app_context_processor
+def inject_reschedule_count():
+    """Inyecta en todos los templates el nro. de reagendamientos pendientes del cliente."""
+    user_id = session.get("user_id")
+    if user_id:
+        try:
+            from services.appointmentService import AppointmentService
+            result = UserService.get_user_by_id(user_id)
+            if result["success"] and result["user"].get("role") == "client":
+                count = AppointmentService.count_pending_reschedules(user_id)
+                return {"reschedule_count": count}
+        except Exception:
+            pass
+    return {"reschedule_count": 0}
+
 @user_bp.route('/register', methods=['GET', 'POST'])
 @guest_only
 def register():

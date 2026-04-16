@@ -157,6 +157,40 @@ def create_worker():
     return render_template('/views/admin/worker_form.html', worker=None,
                            categories=categories, form_data=request.form)
 
+@admin_bp.route('/workers/<worker_id>/edit', methods=['GET', 'POST'])
+@role_required('admin')
+def edit_worker(worker_id):
+    categories = ServiceService.get_categories()
+    result = WorkerService.get_worker_by_id(worker_id)
+    if not result["success"]:
+        flash(result["message"], 'danger')
+        return redirect(url_for('admin.workers'))
+
+    worker = result["worker"]
+
+    if request.method == 'GET':
+        return render_template('/views/admin/worker_form.html',
+                               worker=worker, categories=categories, is_edit=True)
+
+    specialties  = request.form.getlist('specialties')
+    new_password = request.form.get('new_password', '').strip()
+
+    res = WorkerService.update_worker_full(
+        worker_id    = worker_id,
+        first_name   = request.form.get('first_name', '').strip(),
+        last_name    = request.form.get('last_name', '').strip(),
+        phone        = request.form.get('phone', '').strip(),
+        specialties  = specialties,
+        bio          = request.form.get('bio', '').strip(),
+        new_password = new_password if new_password else None
+    )
+    flash(res["message"], 'success' if res["success"] else 'danger')
+    if res["success"]:
+        return redirect(url_for('admin.workers'))
+    return render_template('/views/admin/worker_form.html',
+                           worker=worker, categories=categories, is_edit=True,
+                           form_data=request.form)
+
 @admin_bp.route('/workers/<worker_id>/toggle', methods=['POST'])
 @role_required('admin')
 def toggle_worker(worker_id):

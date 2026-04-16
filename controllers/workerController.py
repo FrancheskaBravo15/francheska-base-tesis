@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, Blueprint, flash, session
+from flask import render_template, request, redirect, url_for, Blueprint, flash, session, jsonify
 from utils.authDecorator import role_required
 from services.workerService import WorkerService
 from services.appointmentService import AppointmentService
@@ -62,3 +62,52 @@ def complete_appointment(appointment_id):
     result = AppointmentService.complete_appointment(appointment_id)
     flash(result["message"], 'success' if result["success"] else 'danger')
     return redirect(url_for('worker.appointments'))
+
+@worker_bp.route('/appointments/<appointment_id>/reschedule', methods=['POST'])
+@role_required('worker')
+def reschedule_appointment(appointment_id):
+    """La trabajadora propone un nuevo horario para una cita confirmada."""
+    user_id        = session.get("user_id")
+    proposed_date  = request.form.get('proposed_date', '').strip()
+    proposed_start = request.form.get('proposed_start_time', '').strip()
+    reason         = request.form.get('reason', '').strip()
+
+    result = AppointmentService.propose_reschedule(
+        appointment_id    = appointment_id,
+        worker_user_id    = user_id,
+        proposed_date     = proposed_date,
+        proposed_start_time = proposed_start,
+        reason            = reason
+    )
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('worker.appointments'))
+
+@worker_bp.route('/appointments/<appointment_id>/slots', methods=['GET'])
+@role_required('worker')
+def reschedule_slots(appointment_id):
+    """
+    API interna: devuelve slots disponibles para una cita específica en una fecha dada.
+    Usado por el modal de reagendamiento (evita exponer service_slug al template).
+    """
+    from repositories.appointmentRepository import AppointmentRepository
+    from repositories.serviceRepository import ServiceRepository
+
+    date = request.args.get('date', '').strip()
+    if not date:
+        return jsonify({"success": False, "slots": [], "message": "Fecha requerida"})
+
+    try:
+        appt = AppointmentRepository.find_by_id(appointment_id)
+        if not appt:
+            return jsonify({"success": False, "slots": [], "message": "Cita no encontrada"})
+
+        service = ServiceRepository.find_by_id(appt.service_id)
+        if not service:
+            return jsonify({"success": False, "slots": [], "message": "Servicio no encontrado"})
+
+        result = WorkerService.get_available_slots(
+            appt.worker_id, date, service.duration_minutes, service.category
+        )
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"success": False, "slots": [], "message": f"Error: {e}"})

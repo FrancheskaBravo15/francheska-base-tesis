@@ -53,7 +53,10 @@ class AppointmentRepository:
 
     @classmethod
     def find_by_worker_and_date(cls, worker_id: str, date: str) -> List[AppointmentModel]:
-        """Citas de una trabajadora en una fecha específica (no canceladas)."""
+        """
+        Citas de una trabajadora en una fecha específica (no canceladas).
+        Las citas con 'pendiente_reagenda' siguen ocupando su horario original.
+        """
         try:
             collection = cls._get_collection()
             return [AppointmentModel.from_dict(a) for a in
@@ -67,12 +70,42 @@ class AppointmentRepository:
             raise
 
     @classmethod
+    def find_pending_reschedule_by_client(cls, client_id: str) -> List[AppointmentModel]:
+        """Citas del cliente con propuesta de reagendamiento pendiente de aceptar."""
+        try:
+            collection = cls._get_collection()
+            return [AppointmentModel.from_dict(a) for a in
+                    collection.find({"client_id": client_id, "status": "pendiente_reagenda"})]
+        except PyMongoError as e:
+            print(f"Error al buscar reagendamientos pendientes en la BD: {e}")
+            raise
+
+    @classmethod
     def update_status(cls, appointment_id: str, status: str) -> None:
         try:
             collection = cls._get_collection()
             collection.update_one({"_id": ObjectId(appointment_id)}, {"$set": {"status": status}})
         except PyMongoError as e:
             print(f"Error al actualizar estado de cita en la BD: {e}")
+            raise
+
+    @classmethod
+    def update_data(cls, appointment_id: str, data: dict) -> None:
+        """Actualización genérica de campos de una cita."""
+        try:
+            collection = cls._get_collection()
+            # Separar campos que se deben eliminar (None) de los que se asignan
+            set_fields   = {k: v for k, v in data.items() if v is not None}
+            unset_fields = {k: "" for k, v in data.items() if v is None}
+            update = {}
+            if set_fields:
+                update["$set"] = set_fields
+            if unset_fields:
+                update["$unset"] = unset_fields
+            if update:
+                collection.update_one({"_id": ObjectId(appointment_id)}, update)
+        except PyMongoError as e:
+            print(f"Error al actualizar datos de cita en la BD: {e}")
             raise
 
     @classmethod
@@ -91,6 +124,7 @@ class AppointmentRepository:
         """
         Verifica si existe conflicto de horario para la trabajadora en la fecha dada.
         Conflicto: otra cita activa cuya franja horaria se solapa con [start_time, end_time).
+        Las citas con 'pendiente_reagenda' siguen bloqueando su horario original.
         """
         try:
             collection = cls._get_collection()
@@ -98,7 +132,6 @@ class AppointmentRepository:
                 "worker_id": worker_id,
                 "date": date,
                 "status": {"$nin": ["cancelada"]},
-                # Solapamiento: start existente < end_nuevo AND end existente > start_nuevo
                 "$and": [
                     {"start_time": {"$lt": end_time}},
                     {"end_time":   {"$gt": start_time}}

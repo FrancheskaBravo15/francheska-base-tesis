@@ -77,6 +77,56 @@ class WorkerService:
             return {"success": False, "message": f"Error al actualizar perfil: {e}"}
 
     @staticmethod
+    def update_worker_full(worker_id: str, first_name: str, last_name: str,
+                           phone: str, specialties: List[str], bio: str,
+                           new_password: str = None) -> Dict:
+        """
+        Actualiza datos personales y perfil de una trabajadora.
+        Uso exclusivo del administrador.
+        Si new_password se proporciona (≥ 8 caracteres), actualiza la contraseña.
+        """
+        errors = []
+        err = validate_phone_number(phone)
+        if err: errors.append(err)
+        if not first_name or len(first_name.strip()) < 2:
+            errors.append("El nombre debe tener al menos 2 caracteres")
+        if not last_name or len(last_name.strip()) < 2:
+            errors.append("El apellido debe tener al menos 2 caracteres")
+        if not specialties:
+            errors.append("Debe seleccionar al menos una especialidad")
+        if new_password and len(new_password) < 8:
+            errors.append("La nueva contraseña debe tener al menos 8 caracteres")
+        if errors:
+            return {"success": False, "message": ", ".join(errors)}
+
+        try:
+            worker = WorkerRepository.find_by_id(worker_id)
+            if not worker:
+                return {"success": False, "message": "Trabajadora no encontrada"}
+
+            # Actualizar datos personales (persons collection)
+            PersonRepository.update_by_user_id(worker.user_id, {
+                "first_name": first_name.strip(),
+                "last_name":  last_name.strip(),
+                "phone":      phone.strip()
+            })
+
+            # Actualizar perfil de trabajadora (workers collection)
+            WorkerRepository.update(worker_id, {
+                "specialties": specialties,
+                "bio":         bio.strip() if bio else ""
+            })
+
+            # Actualizar contraseña si se proporcionó una nueva
+            if new_password:
+                hashed = generate_password_hash(new_password)
+                UserRepository.update(worker.user_id, {"password": hashed})
+
+            return {"success": True, "message": "Trabajadora actualizada exitosamente"}
+        except Exception as e:
+            return {"success": False, "message": f"Error al actualizar trabajadora: {e}"}
+
+    @staticmethod
     def update_availability(user_id: str, availability: dict) -> Dict:
         """
         availability: dict  {day: [{"start": "HH:MM", "end": "HH:MM"}, ...], ...}

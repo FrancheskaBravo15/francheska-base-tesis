@@ -1,114 +1,53 @@
-{% extends 'base.html' %}
-
-{% block body %}
+{% extends 'base.html' %} {% block body %}
 
 <!-- Header -->
-<section class="bg-light py-5">
-    <div class="container text-center">
-        <h1 class="fw-bold">Acerca de Nosotros</h1>
-        <p class="lead mt-3">
-            Centro de Estética, Belleza y Moda "Shirley Buenaño"
-        </p>
-    </div>
-</section>
 
-<!-- Información del negocio -->
-<section class="py-5">
-    <div class="container">
-        <div class="row">
-            
-            <div class="col-md-6">
-                <h2 class="fw-bold">Nuestro Centro</h2>
-                <p class="mt-3">
-                    El centro de estética Shirley Buenaño está comprometido con brindar
-                    servicios de belleza de alta calidad, enfocados en el bienestar
-                    y satisfacción de nuestros clientes.
-                </p>
-                <p>
-                    Contamos con personal capacitado y utilizamos productos profesionales
-                    para garantizar resultados óptimos en cada tratamiento.
-                </p>
-            </div>
-
-            <div class="col-md-6">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">Nuestros valores</h5>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item">Atención personalizada</li>
-                            <li class="list-group-item">Calidad en el servicio</li>
-                            <li class="list-group-item">Innovación constante</li>
-                            <li class="list-group-item">Compromiso con el cliente</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</section>
-
-<!-- Servicios -->
-<section class="bg-light py-5">
+<!-- Sección principal -->
+<section class="py-5 bg-light">
     <div class="container">
         <div class="row align-items-center">
-
-            <div class="col-md-6 order-md-2">
-                <h2 class="fw-bold">Nuestros Servicios</h2>
-                <p class="mt-3">
-                    Ofrecemos una amplia variedad de servicios en el área de belleza
-                    y cuidado personal, adaptados a las necesidades de cada cliente.
-                </p>
-                <p>
-                    Nuestro objetivo es proporcionar una experiencia única,
-                    combinando profesionalismo, tecnología y tendencias actuales.
-                </p>
+            <!-- Imagen representativa -->
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <img src="{{ url_for('static', filename='/somos.jpg') }}" class="img-fluid w-75 rounded shadow" alt="Centro de Estética Shirley Buenaño">
             </div>
-
-            <div class="col-md-6 order-md-1">
-                <div class="card shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">Áreas de atención</h5>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item">Corte y peinado</li>
-                            <li class="list-group-item">Manicure y pedicure</li>
-                            <li class="list-group-item">Tratamientos faciales</li>
-                            <li class="list-group-item">Maquillaje profesional</li>
-                            <li class="list-group-item">Cuidado capilar</li>
-                        </ul>
-                    </div>
-                </div>
+            <!-- Texto descriptivo -->
+            <div class="col-lg-6">
+                <h2 class="fw-bold text-primary mb-3">¿Quiénes Somos?</h2>
+                <p class="text-muted">
+                    Somos el <strong>Centro de Estética, Belleza y Moda Shirley Buenaño</strong>, un espacio dedicado a resaltar la belleza y el bienestar de cada cliente. Nuestro equipo de especialistas certificados ofrece servicios de alta calidad en
+                    manicure, pedicure, tratamientos faciales, estilismo y más.
+                </p>
+                <p class="text-muted">
+                    Nos caracterizamos por la innovación, el profesionalismo y la atención personalizada, asegurando que cada visita sea una experiencia única.
+                </p>
+                <a href="/services" class="btn btn-outline-primary mt-3">Conoce nuestros servicios</a>
             </div>
-
         </div>
     </div>
 </section>
 
-<!-- Misión y Visión -->
+<!-- Valores o características -->
 <section class="py-5">
     <div class="container">
-        <div class="row">
-
-            <div class="col-md-6">
-                <h3 class="fw-bold">Misión</h3>
-                <p class="mt-3">
-                    Brindar servicios de estética y belleza con altos estándares de calidad,
-                    satisfaciendo las necesidades de nuestros clientes mediante atención
-                    personalizada y profesional.
-                </p>
+        <div class="row text-center">
+            <div class="col-md-4 mb-4">
+                <i class="bi bi-heart-fill" style="font-size:2rem; color:#b388ff;"></i>
+                <h5 class="fw-bold mt-2">Pasión</h5>
+                <p class="text-muted small">Amamos lo que hacemos y lo reflejamos en cada detalle.</p>
             </div>
-
-            <div class="col-md-6">
-                <h3 class="fw-bold">Visión</h3>
-                <p class="mt-3">
-                    Ser un centro de estética reconocido en la ciudad de Machala por
-                    la excelencia en nuestros servicios y la innovación en el cuidado
-                    personal y la belleza.
-                </p>
+            <div class="col-md-4 mb-4">
+                <i class="bi bi-award-fill" style="font-size:2rem; color:#b388ff;"></i>
+                <h5 class="fw-bold mt-2">Profesionalismo</h5>
+                <p class="text-muted small">Especialistas certificados en cada área de belleza y moda.</p>
             </div>
-
+            <div class="col-md-4 mb-4">
+                <i class="bi bi-stars" style="font-size:2rem; color:#b388ff;"></i>
+                <h5 class="fw-bold mt-2">Excelencia</h5>
+                <p class="text-muted small">Buscamos superar las expectativas de nuestros clientes.</p>
+            </div>
         </div>
     </div>
 </section>
+
 
 {% endblock %}

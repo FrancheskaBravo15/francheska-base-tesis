@@ -1,22 +1,19 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %} {% block title %}Inicio - Centro de Estética Shirley Buenaño{% endblock %} {% block body %}
 
-{% block title %}Inicio - Centro de Estética Shirley Buenaño{% endblock %}
-
-{% block body %}
 <!-- Hero -->
-<div class="rounded-4 text-white text-center p-5 mb-5" style="background: linear-gradient(135deg, #c2185b, #880e4f);">
+<div class="rounded-4 text-white text-center p-5 mb-5" style="background: linear-gradient(135deg, #f7f6f6, #f2bdd9);">
     <h1 class="display-5 fw-bold mb-3">
         <i class="bi bi-stars me-2"></i>Bienvenida a Shirley Buenaño
     </h1>
     <p class="lead mb-4">Centro de Estética, Belleza y Moda. Reserva tu cita en minutos y luce radiante.</p>
     <div class="d-flex justify-content-center gap-3 flex-wrap">
-        <a href="{{ url_for('services.catalog') }}" class="btn btn-light btn-lg px-4">
+        <a href="{{ url_for('services.catalog') }}" class="btn btn-light btn-lg px-4 shadow-sm">
             <i class="bi bi-scissors me-2"></i>Ver Servicios
         </a>
         {% if not current_user %}
-            <a href="{{ url_for('users.register') }}" class="btn btn-outline-light btn-lg px-4">
-                <i class="bi bi-person-plus me-2"></i>Crear Cuenta
-            </a>
+        <a href="{{ url_for('users.register') }}" class="btn btn-outline-light btn-lg px-4 shadow-sm">
+            <i class="bi bi-person-plus me-2"></i>Crear Cuenta
+        </a>
         {% endif %}
     </div>
 </div>
@@ -24,101 +21,129 @@
 <!-- Categorías -->
 {% if categories %}
 <div class="mb-5">
-    <h4 class="fw-bold mb-3"><i class="bi bi-grid me-2 text-danger"></i>Categorías</h4>
+    <h4 class="fw-bold mb-3"><i class="bi bi-grid me-2 text-primary"></i>Categorías</h4>
     <div class="d-flex flex-wrap gap-2">
-        <a href="{{ url_for('services.catalog') }}" class="btn btn-outline-danger btn-sm">
+        <a href="{{ url_for('services.catalog') }}" class="btn btn-outline-primary btn-sm">
             <i class="bi bi-grid-fill me-1"></i>Todas
         </a>
         {% for cat in categories %}
-            <a href="{{ url_for('services.catalog', category=cat) }}" class="btn btn-outline-secondary btn-sm">
-                {{ cat }}
-            </a>
-        {% endfor %}
+        <a href="{{ url_for('services.catalog', category=cat) }}" class="btn btn-sm" style="background-color:#f3e5f5; color:#4a148c;">
+            {{ cat }}
+        </a> {% endfor %}
     </div>
 </div>
 {% endif %}
 
 <!-- Servicios destacados -->
-<h4 class="fw-bold mb-4"><i class="bi bi-star me-2 text-danger"></i>Servicios Destacados</h4>
+<h4 class="fw-bold mb-4"><i class="bi bi-star me-2 text-primary"></i>Servicios Destacados</h4>
 {% if services %}
-    <div class="row g-4 mb-4">
-        {% for service in services %}
-            <div class="col-sm-6 col-lg-4">
-                <div class="card h-100 shadow-sm border-0">
-                    {% if service.image_url %}
-                        <img src="{{ service.image_url }}" class="card-img-top" alt="{{ service.name }}"
-                             style="height:180px;object-fit:cover;">
-                    {% else %}
-                        <div class="d-flex align-items-center justify-content-center"
-                             style="height:180px;background-color:#fce4ec;">
-                            <i class="bi bi-scissors text-danger" style="font-size:3rem;"></i>
-                        </div>
-                    {% endif %}
-                    <div class="card-body">
-                        <span class="badge mb-2" style="background-color:#c2185b;">{{ service.category }}</span>
-                        <h6 class="card-title fw-bold">{{ service.name }}</h6>
-                        <p class="card-text text-muted small">{{ service.description[:80] if service.description else '' }}{% if service.description and service.description|length > 80 %}...{% endif %}</p>
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            <div>
-                                <span class="fw-bold text-danger">${{ "%.2f"|format(service.price) }}</span>
-                                <small class="text-muted d-block"><i class="bi bi-clock me-1"></i>{{ service.duration_minutes }} min</small>
-                            </div>
-                            <a href="{{ url_for('services.detail', service_slug=service.slug) }}"
-                               class="btn btn-sm btn-outline-danger">
-                                <i class="bi bi-eye me-1"></i>Ver
-                            </a>
-                        </div>
+<div class="row g-4 mb-4">
+    {% for service in services %}
+    <div class="col-sm-6 col-lg-4">
+        <div class="card h-100 shadow-sm border-0">
+            {% if service.image_url %}
+            <img src="{{ service.image_url }}" class="card-img-top" alt="{{ service.name }}" style="height:180px;object-fit:cover;"> {% else %}
+            <div class="d-flex align-items-center justify-content-center" style="height:180px;background-color:#f3e5f5;">
+                <i class="bi bi-scissors text-primary" style="font-size:3rem;"></i>
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <span class="badge mb-2" style="background-color:#b388ff;">{{ service.category }}</span>
+                <h6 class="card-title fw-bold">{{ service.name }}</h6>
+                <p class="card-text text-muted small">
+                    {{ service.description[:80] if service.description else '' }} {% if service.description and service.description|length > 80 %}...{% endif %}
+                </p>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <div>
+                        <span class="fw-bold" style="color:#ffd54f;">${{ "%.2f"|format(service.price) }}</span>
+                        <small class="text-muted d-block"><i class="bi bi-clock me-1"></i>{{ service.duration_minutes }} min</small>
                     </div>
+                    <a href="{{ url_for('services.detail', service_slug=service.slug) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye me-1"></i>Ver
+                    </a>
                 </div>
             </div>
-        {% endfor %}
+        </div>
     </div>
-    <div class="text-center mb-5">
-        <a href="{{ url_for('services.catalog') }}" class="btn btn-danger px-4">
-            <i class="bi bi-grid me-2"></i>Ver Todos los Servicios
-        </a>
-    </div>
+    {% endfor %}
+</div>
+<div class="text-center mb-5">
+    <a href="{{ url_for('services.catalog') }}" class="btn btn-primary px-4 shadow-sm">
+        <i class="bi bi-grid me-2"></i>Ver Todos los Servicios
+    </a>
+</div>
 {% else %}
-    <div class="text-center py-5 text-muted">
-        <i class="bi bi-scissors" style="font-size:3rem;"></i>
-        <p class="mt-3">Próximamente agregaremos nuestros servicios.</p>
-        {% if current_user and current_user.role == 'admin' %}
-            <a href="{{ url_for('admin.create_service') }}" class="btn btn-danger mt-2">
-                <i class="bi bi-plus me-1"></i>Agregar Servicio
-            </a>
-        {% endif %}
-    </div>
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-scissors" style="font-size:3rem;"></i>
+    <p class="mt-3">Próximamente agregaremos nuestros servicios.</p>
+    {% if current_user and current_user.role == 'admin' %}
+    <a href="{{ url_for('admin.create_service') }}" class="btn btn-primary mt-2">
+        <i class="bi bi-plus me-1"></i>Agregar Servicio
+    </a>
+    {% endif %}
+</div>
 {% endif %}
 
 <!-- Beneficios -->
 <div class="row g-4 mt-2">
-    <div class="col-12"><h4 class="fw-bold"><i class="bi bi-check-circle me-2 text-danger"></i>¿Por qué elegirnos?</h4></div>
+    <div class="col-12">
+        <h4 class="fw-bold"><i class="bi bi-check-circle me-2 text-primary"></i>¿Por qué elegirnos?</h4>
+    </div>
     <div class="col-sm-6 col-lg-3">
-        <div class="text-center p-3 rounded-3 bg-white shadow-sm h-100">
-            <i class="bi bi-calendar-check text-danger" style="font-size:2rem;"></i>
+        <div class="text-center p-3 rounded-3 bg-light shadow-sm h-100">
+            <i class="bi bi-calendar-check text-primary" style="font-size:2rem;"></i>
             <h6 class="fw-bold mt-2">Reserva Fácil</h6>
             <p class="small text-muted mb-0">Agenda tu cita en línea en cualquier momento del día.</p>
         </div>
     </div>
     <div class="col-sm-6 col-lg-3">
         <div class="text-center p-3 rounded-3 bg-white shadow-sm h-100">
-            <i class="bi bi-award text-danger" style="font-size:2rem;"></i>
+            <i class="bi bi-award text-primary" style="font-size:2rem;"></i>
             <h6 class="fw-bold mt-2">Especialistas</h6>
             <p class="small text-muted mb-0">Profesionales certificadas en cada área de belleza.</p>
         </div>
     </div>
     <div class="col-sm-6 col-lg-3">
-        <div class="text-center p-3 rounded-3 bg-white shadow-sm h-100">
-            <i class="bi bi-shield-check text-danger" style="font-size:2rem;"></i>
+        <div class="text-center p-3 rounded-3 bg-light shadow-sm h-100">
+            <i class="bi bi-shield-check text-primary" style="font-size:2rem;"></i>
             <h6 class="fw-bold mt-2">Pago Seguro</h6>
             <p class="small text-muted mb-0">Transacciones protegidas y confiables con Payphone.</p>
         </div>
     </div>
     <div class="col-sm-6 col-lg-3">
         <div class="text-center p-3 rounded-3 bg-white shadow-sm h-100">
-            <i class="bi bi-star text-danger" style="font-size:2rem;"></i>
+            <i class="bi bi-star text-primary" style="font-size:2rem;"></i>
             <h6 class="fw-bold mt-2">Calidad Premium</h6>
             <p class="small text-muted mb-0">Productos y técnicas de primera calidad garantizada.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Testimonios -->
+<div class="mt-5 p-5 bg-light rounded-4 shadow-sm text-center">
+    <h4 class="fw-bold mb-4"><i class="bi bi-chat-quote text-primary me-2"></i>Lo que dicen nuestras clientas</h4>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="p-3 bg-white rounded shadow-sm h-100">
+                <p class="small text-muted">“Excelente atención y resultados increíbles. Me sentí como en casa.”</p>
+                <div class="text-warning"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
+                <small class="fw-bold">María P.</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 bg-white rounded shadow-sm h-100">
+                <p class="small text-muted">“Los servicios son de primera calidad, siempre vuelvo feliz.”</p>
+                <div class="text-warning"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
+                <small class="fw-bold">Carolina R.</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 bg-white rounded shadow-sm h-100">
+                <p class="small text-muted">“Me encantó el maquillaje, muy profesional y duradero.”</p>
+                <div class="text-warning"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star
+-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
+                <small class="fw-bold">Lucía M.</small>
+            </div>
         </div>
     </div>
 </div>

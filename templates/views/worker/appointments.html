@@ -3,9 +3,11 @@
 
 {% block body %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-bold mb-0"><i class="bi bi-calendar-check me-2 text-danger"></i>Historial de Citas</h3>
+    <h3 class="fw-bold mb-0">
+        <i class="bi bi-calendar-check me-2" style="color:#b388ff;"></i>Historial de Citas
+    </h3>
     <div class="d-flex align-items-center gap-3">
-        <span class="fw-bold text-success">
+        <span class="fw-bold" style="color:#7b1fa2;">
             <i class="bi bi-cash-coin me-1"></i>Recaudado: ${{ "%.2f"|format(total_earned) }}
         </span>
         <a href="{{ url_for('worker.dashboard') }}" class="btn btn-outline-secondary btn-sm">
@@ -16,87 +18,266 @@
 
 <!-- Filtros -->
 <div class="d-flex gap-2 mb-4 flex-wrap">
-    <button class="btn btn-sm btn-danger filter-btn active" data-filter="all">Todas</button>
+    <button class="btn btn-sm filter-btn active" style="background-color:#b388ff; color:white;" data-filter="all">Todas</button>
     <button class="btn btn-sm btn-outline-success filter-btn" data-filter="confirmada">Confirmadas</button>
+    <button class="btn btn-sm filter-btn" style="border:1px solid #ffd54f; color:#7b1fa2;" data-filter="pendiente_reagenda">Reagendando</button>
     <button class="btn btn-sm btn-outline-secondary filter-btn" data-filter="completada">Completadas</button>
-    <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="cancelada">Canceladas</button>
+    <button class="btn btn-sm filter-btn" style="border:1px solid #f48fb1; color:#f48fb1;" data-filter="cancelada">Canceladas</button>
 </div>
 
 {% if appointments %}
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead style="background-color:#fce4ec;">
-                        <tr>
-                            <th class="ps-3">Fecha</th>
-                            <th>Horario</th>
-                            <th>Servicio</th>
-                            <th>Cliente</th>
-                            <th>Total</th>
-                            <th>Estado</th>
-                            <th class="pe-3 text-center">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for appt in appointments %}
-                        <tr data-status="{{ appt.status }}">
-                            <td class="ps-3 fw-semibold">{{ appt.date }}</td>
-                            <td class="text-muted small">{{ appt.start_time }} - {{ appt.end_time }}</td>
-                            <td>{{ appt.service_name }}</td>
-                            <td>{{ appt.client_name }}</td>
-                            <td class="fw-bold text-danger">${{ "%.2f"|format(appt.total_price) }}</td>
-                            <td>
-                                {% if appt.status == 'confirmada' %}
-                                    <span class="badge bg-success">Confirmada</span>
-                                {% elif appt.status == 'completada' %}
-                                    <span class="badge bg-secondary">Completada</span>
-                                {% elif appt.status == 'cancelada' %}
-                                    <span class="badge bg-danger">Cancelada</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center pe-3">
-                                {% if appt.status == 'confirmada' %}
-                                    <form method="POST" action="{{ url_for('worker.complete_appointment', appointment_id=appt.appointment_id) }}"
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead style="background-color:#f3e5f5;">
+                    <tr>
+                        <th class="ps-3">Fecha</th>
+                        <th>Horario</th>
+                        <th>Servicio</th>
+                        <th>Cliente</th>
+                        <th>Total</th>
+                        <th>Estado</th>
+                        <th class="pe-3 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appt in appointments %}
+                    <tr data-status="{{ appt.status }}">
+                        <td class="ps-3 fw-semibold">{{ appt.date }}</td>
+                        <td class="text-muted small">{{ appt.start_time }} - {{ appt.end_time }}</td>
+                        <td>{{ appt.service_name }}</td>
+                        <td>{{ appt.client_name }}</td>
+                        <td class="fw-bold" style="color:#7b1fa2;">${{ "%.2f"|format(appt.total_price) }}</td>
+                        <td>
+                            {% if appt.status == 'confirmada' %}
+                                <span class="badge bg-success">Confirmada</span>
+                            {% elif appt.status == 'pendiente_reagenda' %}
+                                <span class="badge" style="background-color:#fff59d; color:#7b1fa2;">
+                                    <i class="bi bi-clock-history me-1"></i>Esperando cliente
+                                </span>
+                            {% elif appt.status == 'completada' %}
+                                <span class="badge bg-secondary">Completada</span>
+                            {% elif appt.status == 'cancelada' %}
+                                <span class="badge" style="background-color:#f48fb1; color:white;">Cancelada</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center pe-3">
+                            {% if appt.status == 'confirmada' %}
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <!-- Completar -->
+                                    <form method="POST"
+                                          action="{{ url_for('worker.complete_appointment', appointment_id=appt.appointment_id) }}"
                                           onsubmit="return confirm('¿Marcar como completada?')">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button class="btn btn-sm btn-success">
-                                            <i class="bi bi-check-circle me-1"></i>Completar
+                                        <button class="btn btn-sm btn-success" title="Completar cita">
+                                            <i class="bi bi-check-circle"></i>
                                         </button>
                                     </form>
-                                {% else %}
-                                    <span class="text-muted small">—</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                                    <!-- Reagendar -->
+                                    <button class="btn btn-sm btn-outline-warning"
+                                            title="Proponer nuevo horario"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#rescheduleModal"
+                                            data-appt-id="{{ appt.appointment_id }}"
+                                            data-appt-date="{{ appt.date }}"
+                                            data-appt-time="{{ appt.start_time }}"
+                                            data-client="{{ appt.client_name }}"
+                                            data-service="{{ appt.service_name }}">
+                                        <i class="bi bi-calendar2-plus"></i>
+                                    </button>
+                                </div>
+                            {% elif appt.status == 'pendiente_reagenda' %}
+                                <span class="text-muted small"
+                                      title="Propuesta: {{ appt.proposed_date }} {{ appt.proposed_start_time }}">
+                                    <i class="bi bi-hourglass-split" style="color:#ffd54f;"></i>
+                                    {{ appt.proposed_date }} {{ appt.proposed_start_time }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
+</div>
 {% else %}
-    <div class="text-center py-5 text-muted">
-        <i class="bi bi-calendar-x" style="font-size:3rem;"></i>
-        <p class="mt-3">No tienes historial de citas aún.</p>
-        <a href="{{ url_for('worker.schedule') }}" class="btn btn-outline-danger">
-            <i class="bi bi-clock me-1"></i>Configurar mi horario
-        </a>
-    </div>
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-calendar-x" style="font-size:3rem; color:#b388ff;"></i>
+    <p class="mt-3">No tienes historial de citas aún.</p>
+    <a href="{{ url_for('worker.schedule') }}" class="btn btn-sm" style="border:1px solid #b388ff; color:#7b1fa2;">
+        <i class="bi bi-clock me-1"></i>Configurar mi horario
+    </a>
+</div>
 {% endif %}
+
+<!-- ───────────── Modal de Reagendamiento ───────────── -->
+<div class="modal fade" id="rescheduleModal" tabindex="-1" aria-labelledby="rescheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header" style="background-color:#b388ff;">
+                <h5 class="modal-title text-white" id="rescheduleModalLabel">
+                    <i class="bi bi-calendar2-plus me-2"></i>Proponer Reagendamiento
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="rescheduleForm" action="">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="proposed_start_time" id="rescheduleTime">
+                <div class="modal-body">
+                    <!-- Info de la cita actual -->
+                    <div class="alert border-0 mb-3" style="background-color:#f3e5f5;">
+                        <div class="small text-muted mb-1">Cita actual a reagendar:</div>
+                        <div class="fw-semibold" id="modalServiceName">—</div>
+                        <div class="text-muted small">
+                            <i class="bi bi-person me-1"></i><span id="modalClientName">—</span>
+                            &nbsp;·&nbsp;
+                            <i class="bi bi-calendar me-1"></i><span id="modalCurrentDate">—</span>
+                            &nbsp;·&nbsp;
+                            <i class="bi bi-clock me-1"></i><span id="modalCurrentTime">—</span>
+                        </div>
+                    </div>
+
+                    <!-- Nueva fecha -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nueva Fecha <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="rescheduleDate" name="proposed_date" required>
+                    </div>
+
+                    <!-- Slots disponibles (carga dinámica) -->
+                    <div class="mb-3" id="slotsSection" style="display:none;">
+                        <label class="form-label fw-semibold">Nuevo Horario <span class="text-danger">*</span></label>
+                        <div id="rescheduleSlotsList" class="d-flex flex-wrap gap-2"></div>
+                        <div id="noRescheduleSlotsMsg" class="text-muted small mt-2" style="display:none;">
+                            <i class="bi bi-exclamation-circle me-1"></i>No hay horarios disponibles para esta fecha.
+                        </div>
+                    </div>
+
+                    <!-- Motivo -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Motivo del Reagendamiento <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="reason" id="rescheduleReason" rows="2"
+                                  placeholder="Ej: Motivo personal, emergencia, etc." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x me-1"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn text-white" id="rescheduleSubmitBtn"
+                            style="background-color:#b388ff;" disabled>
+                        <i class="bi bi-send me-1"></i>Enviar Propuesta al Cliente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// ── Filtro de filas ──────────────────────────────────────────────────────────
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active', 'btn-danger', 'btn-success', 'btn-secondary'));
-        btn.classList.add('active');
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            b.style.backgroundColor = '';
+            b.style.color = '';
+            b.classList.remove('active', 'text-white');
+        });
+        btn.classList.add('active', 'text-white');
+        btn.style.backgroundColor = '#b388ff';
+        btn.style.color = 'white';
         const filter = btn.dataset.filter;
         document.querySelectorAll('tbody tr[data-status]').forEach(row => {
             row.style.display = (filter === 'all' || row.dataset.status === filter) ? '' : 'none';
         });
     });
+});
+
+// ── Modal de reagendamiento ──────────────────────────────────────────────────
+const rescheduleModal = document.getElementById('rescheduleModal');
+if (rescheduleModal) {
+    rescheduleModal.addEventListener('show.bs.modal', event => {
+        const btn    = event.relatedTarget;
+        const apptId  = btn.dataset.apptId;
+        const date    = btn.dataset.apptDate;
+        const time    = btn.dataset.apptTime;
+        const client  = btn.dataset.client;
+        const service = btn.dataset.service;
+
+        document.getElementById('modalServiceName').textContent  = service;
+        document.getElementById('modalClientName').textContent   = client;
+        document.getElementById('modalCurrentDate').textContent  = date;
+        document.getElementById('modalCurrentTime').textContent  = time;
+
+        document.getElementById('rescheduleForm').action =
+            `/worker/appointments/${apptId}/reschedule`;
+
+        document.getElementById('rescheduleDate').value = '';
+        document.getElementById('rescheduleDate').min   =
+            new Date().toISOString().split('T')[0];
+        document.getElementById('rescheduleTime').value = '';
+        document.getElementById('slotsSection').style.display = 'none';
+        document.getElementById('rescheduleSlotsList').innerHTML = '';
+        document.getElementById('noRescheduleSlotsMsg').style.display = 'none';
+        document.getElementById('rescheduleSubmitBtn').disabled = true;
+
+        rescheduleModal.dataset.currentApptId = apptId;
+    });
+}
+
+// Cargar slots cuando cambia la fecha en el modal
+document.getElementById('rescheduleDate')?.addEventListener('change', function() {
+    const apptId      = rescheduleModal.dataset.currentApptId;
+    const date        = this.value;
+    const slotsList   = document.getElementById('rescheduleSlotsList');
+    const noSlotsMsg  = document.getElementById('noRescheduleSlotsMsg');
+    const slotsSection = document.getElementById('slotsSection');
+    const submitBtn   = document.getElementById('rescheduleSubmitBtn');
+    const timeInput   = document.getElementById('rescheduleTime');
+
+    timeInput.value = '';
+    submitBtn.disabled = true;
+    slotsList.innerHTML = '<span class="text-muted small"><i class="bi bi-hourglass-split me-1"></i>Cargando horarios...</span>';
+    noSlotsMsg.style.display = 'none';
+    slotsSection.style.display = 'block';
+
+    fetch(`/worker/appointments/${apptId}/slots?date=${date}`)
+        .then(r => r.json())
+        .then(data => {
+            slotsList.innerHTML = '';
+            if (data.slots && data.slots.length > 0) {
+                noSlotsMsg.style.display = 'none';
+                data.slots.forEach(slot => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'btn btn-sm slot-btn-re';
+                    btn.style.border = '1px solid #b388ff';
+                    btn.style.color  = '#7b1fa2';
+                    btn.textContent  = slot.start;
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.slot-btn-re').forEach(b => {
+                            b.style.backgroundColor = '';
+                            b.style.color = '#7b1fa2';
+                        });
+                        btn.style.backgroundColor = '#b388ff';
+                        btn.style.color = 'white';
+                        timeInput.value = slot.start;
+                        submitBtn.disabled = false;
+                    });
+                    slotsList.appendChild(btn);
+                });
+            } else {
+                noSlotsMsg.style.display = 'block';
+            }
+        })
+        .catch(() => {
+            slotsList.innerHTML = '<span class="text-danger small">Error al cargar horarios</span>';
+        });
 });
 </script>
 {% endblock %}

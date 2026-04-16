@@ -294,11 +294,11 @@
 
 {% block extra_js %}
 <script>
-const serviceId = "{{ service.id }}";
+const serviceSlug = "{{ service.slug }}";
 
 function loadSlots() {
-    const workerId = document.getElementById('workerSelect').value;
-    const date     = document.getElementById('dateInput').value;
+    const workerId  = document.getElementById('workerSelect').value;
+    const date      = document.getElementById('dateInput').value;
     const container = document.getElementById('slotsContainer');
     const list      = document.getElementById('slotsList');
     const noSlots   = document.getElementById('noSlotsMsg');
@@ -318,7 +318,7 @@ function loadSlots() {
     list.innerHTML = '<span class="text-muted small"><i class="bi bi-hourglass-split me-1"></i>Cargando horarios...</span>';
     noSlots.style.display = 'none';
 
-    fetch(`/services/${serviceId}/slots?worker_id=${workerId}&date=${date}`)
+    fetch(`/services/${serviceSlug}/slots?worker_id=${workerId}&date=${date}`)
         .then(r => r.json())
         .then(data => {
             list.innerHTML = '';

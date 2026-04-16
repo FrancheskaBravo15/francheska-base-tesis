@@ -56,13 +56,17 @@
                     {% endif %}
                 </div>
 
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ url_for('admin.edit_worker', worker_id=worker.worker_id) }}"
+                       class="btn btn-sm btn-outline-secondary flex-fill">
+                        <i class="bi bi-pencil me-1"></i>Editar
+                    </a>
                     <a href="{{ url_for('admin.worker_schedule', worker_id=worker.worker_id) }}"
                        class="btn btn-sm btn-outline-primary flex-fill">
                         <i class="bi bi-clock me-1"></i>Horario
                     </a>
                     <form method="POST" action="{{ url_for('admin.toggle_worker', worker_id=worker.worker_id) }}"
-                          class="d-inline flex-fill"
+                          class="d-inline w-100"
                           onsubmit="return confirm('¿Cambiar estado de la trabajadora?')">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button class="btn btn-sm {% if worker.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %} w-100">
