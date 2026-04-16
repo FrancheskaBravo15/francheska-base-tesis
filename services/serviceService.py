@@ -1,13 +1,25 @@
 from typing import Dict, List
-from models.serviceModel import ServiceModel
+from models.serviceModel import ServiceModel, generate_slug
 from repositories.serviceRepository import ServiceRepository
 import os
 from werkzeug.utils import secure_filename
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 
+
 def _allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def _ensure_unique_slug(base_slug: str, exclude_id: str = None) -> str:
+    """Garantiza que el slug sea único; si hay conflicto agrega sufijo numérico."""
+    slug = base_slug
+    counter = 1
+    while ServiceRepository.slug_exists(slug, exclude_id=exclude_id):
+        slug = f"{base_slug}-{counter}"
+        counter += 1
+    return slug
+
 
 class ServiceService:
 
@@ -41,7 +53,6 @@ class ServiceService:
             if not _allowed_file(image_file.filename):
                 return {"success": False, "message": "Formato de imagen no permitido (jpg, png, webp)"}
             filename = secure_filename(image_file.filename)
-            # Guardamos con un nombre único
             import uuid
             ext = filename.rsplit(".", 1)[1].lower()
             unique_name = f"{uuid.uuid4().hex}.{ext}"
@@ -50,16 +61,19 @@ class ServiceService:
             image_url = f"/img/services/{unique_name}"
 
         try:
+            slug = _ensure_unique_slug(generate_slug(name.strip()))
             service = ServiceModel(
                 name=name.strip(),
                 description=description.strip() if description else "",
                 category=category.strip(),
                 price=float(price),
                 duration_minutes=int(duration_minutes),
-                image_url=image_url
+                image_url=image_url,
+                slug=slug
             )
             service_id = ServiceRepository.create(service)
-            return {"success": True, "message": "Servicio creado exitosamente", "service_id": service_id}
+            return {"success": True, "message": "Servicio creado exitosamente",
+                    "service_id": service_id, "slug": slug}
         except Exception as e:
             return {"success": False, "message": f"Error al crear servicio: {e}"}
 
@@ -72,8 +86,11 @@ class ServiceService:
             if not service:
                 return {"success": False, "message": "Servicio no encontrado"}
 
+            slug = _ensure_unique_slug(generate_slug(name.strip()), exclude_id=service_id)
+
             data = {
                 "name": name.strip(),
+                "slug": slug,
                 "description": description.strip() if description else "",
                 "category": category.strip(),
                 "price": float(price),
@@ -93,7 +110,7 @@ class ServiceService:
                 data["image_url"] = f"/img/services/{unique_name}"
 
             ServiceRepository.update(service_id, data)
-            return {"success": True, "message": "Servicio actualizado exitosamente"}
+            return {"success": True, "message": "Servicio actualizado exitosamente", "slug": slug}
         except Exception as e:
             return {"success": False, "message": f"Error al actualizar servicio: {e}"}
 
@@ -117,6 +134,16 @@ class ServiceService:
     def get_service_by_id(service_id: str) -> Dict:
         try:
             service = ServiceRepository.find_by_id(service_id)
+            if not service:
+                return {"success": False, "message": "Servicio no encontrado"}
+            return {"success": True, "service": service.__dict__}
+        except Exception as e:
+            return {"success": False, "message": f"Error al obtener servicio: {e}"}
+
+    @staticmethod
+    def get_service_by_slug(slug: str) -> Dict:
+        try:
+            service = ServiceRepository.find_by_slug(slug)
             if not service:
                 return {"success": False, "message": "Servicio no encontrado"}
             return {"success": True, "service": service.__dict__}

@@ -40,20 +40,21 @@ def catalog():
                            selected_category=category,
                            wishlist_ids=wishlist_ids)
 
-@service_bp.route('/<service_id>', methods=['GET'])
-def detail(service_id):
-    result = ServiceService.get_service_by_id(service_id)
+
+@service_bp.route('/<service_slug>', methods=['GET'])
+def detail(service_slug):
+    result = ServiceService.get_service_by_slug(service_slug)
     if not result["success"]:
         flash(result["message"], 'danger')
         return redirect(url_for('services.catalog'))
 
     service    = result["service"]
     user_id    = session.get("user_id")
-    rev_result = ReviewService.get_reviews_for_service(service_id, current_user_id=user_id)
+    rev_result = ReviewService.get_reviews_for_service(service["id"], current_user_id=user_id)
 
     in_wishlist = False
     if user_id:
-        in_wishlist = WishlistService.is_in_wishlist(user_id, service_id)
+        in_wishlist = WishlistService.is_in_wishlist(user_id, service["id"])
 
     # Trabajadoras disponibles para la categoría del servicio
     workers_result = WorkerService.get_workers_by_specialty(service["category"])
@@ -67,8 +68,9 @@ def detail(service_id):
                            in_wishlist=in_wishlist,
                            workers=workers_result.get("workers", []))
 
-@service_bp.route('/<service_id>/slots', methods=['GET'])
-def get_slots(service_id):
+
+@service_bp.route('/<service_slug>/slots', methods=['GET'])
+def get_slots(service_slug):
     """API para obtener slots disponibles de una trabajadora en una fecha."""
     worker_id = request.args.get('worker_id')
     date      = request.args.get('date')
@@ -76,7 +78,7 @@ def get_slots(service_id):
     if not worker_id or not date:
         return jsonify({"success": False, "slots": [], "message": "Parámetros incompletos"})
 
-    service_result = ServiceService.get_service_by_id(service_id)
+    service_result = ServiceService.get_service_by_slug(service_slug)
     if not service_result["success"]:
         return jsonify({"success": False, "slots": [], "message": "Servicio no encontrado"})
 

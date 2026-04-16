@@ -1,12 +1,28 @@
 from datetime import datetime
+import unicodedata
+import re
+
+
+def generate_slug(name: str) -> str:
+    """Genera un slug URL-amigable desde un nombre de servicio."""
+    # Normalizar unicode: quitar tildes y diacríticos
+    name = unicodedata.normalize('NFKD', name)
+    name = ''.join(c for c in name if not unicodedata.combining(c))
+    name = name.lower()
+    # Reemplazar caracteres no alfanuméricos con guiones
+    name = re.sub(r'[^a-z0-9]+', '-', name)
+    name = name.strip('-')
+    return name
+
 
 class ServiceModel:
     # Modelo de dominio para los servicios de belleza y moda
 
     def __init__(self, name, description, category, price, duration_minutes,
-                 image_url=None, is_active=True, id=None):
+                 image_url=None, is_active=True, id=None, slug=None):
         self.id = id
         self.name = name
+        self.slug = slug if slug else generate_slug(name)
         self.description = description
         self.category = category          # Ej: Manicura, Pedicura, Cabello, Maquillaje, etc.
         self.price = float(price)
@@ -24,7 +40,8 @@ class ServiceModel:
             price            = data["price"],
             duration_minutes = data["duration_minutes"],
             image_url        = data.get("image_url"),
-            is_active        = data.get("is_active", True)
+            is_active        = data.get("is_active", True),
+            slug             = data.get("slug") or generate_slug(data["name"])
         )
         if "_id" in data:
             service.id = str(data["_id"])
@@ -33,6 +50,7 @@ class ServiceModel:
     def to_dict(self) -> dict:
         return {
             "name":             self.name,
+            "slug":             self.slug,
             "description":      self.description,
             "category":         self.category,
             "price":            self.price,
@@ -43,4 +61,4 @@ class ServiceModel:
         }
 
     def __repr__(self):
-        return f"ServiceModel(name={self.name}, category={self.category}, price={self.price})"
+        return f"ServiceModel(name={self.name}, slug={self.slug}, category={self.category}, price={self.price})"

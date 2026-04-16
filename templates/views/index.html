@@ -63,7 +63,7 @@
                                 <span class="fw-bold text-danger">${{ "%.2f"|format(service.price) }}</span>
                                 <small class="text-muted d-block"><i class="bi bi-clock me-1"></i>{{ service.duration_minutes }} min</small>
                             </div>
-                            <a href="{{ url_for('services.detail', service_id=service.id) }}"
+                            <a href="{{ url_for('services.detail', service_slug=service.slug) }}"
                                class="btn btn-sm btn-outline-danger">
                                 <i class="bi bi-eye me-1"></i>Ver
                             </a>

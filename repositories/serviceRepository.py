@@ -1,5 +1,5 @@
 from database.mongoDb import DatabaseConnection
-from models.serviceModel import ServiceModel
+from models.serviceModel import ServiceModel, generate_slug
 from typing import List, Optional
 from bson import ObjectId
 from pymongo.errors import PyMongoError
@@ -42,6 +42,28 @@ class ServiceRepository:
             raise
 
     @classmethod
+    def find_by_slug(cls, slug: str) -> Optional[ServiceModel]:
+        """
+        Busca un servicio por su slug.
+        Primero intenta por el campo 'slug' almacenado.
+        Si no encuentra, busca entre registros sin slug cuyo nombre genere ese slug (compatibilidad).
+        """
+        try:
+            collection = cls._get_collection()
+            # Búsqueda directa por campo slug
+            data = collection.find_one({"slug": slug})
+            if data:
+                return ServiceModel.from_dict(data)
+            # Fallback: servicios sin campo slug cuyo nombre coincida
+            for doc in collection.find({"slug": {"$exists": False}}):
+                if generate_slug(doc.get("name", "")) == slug:
+                    return ServiceModel.from_dict(doc)
+            return None
+        except PyMongoError as e:
+            print(f"Error al buscar servicio por slug en la BD: {e}")
+            raise
+
+    @classmethod
     def find_by_category(cls, category: str, only_active=True) -> List[ServiceModel]:
         try:
             collection = cls._get_collection()
@@ -61,6 +83,19 @@ class ServiceRepository:
             return [ServiceModel.from_dict(s) for s in collection.find({"_id": {"$in": object_ids}})]
         except PyMongoError as e:
             print(f"Error al buscar servicios por ids en la BD: {e}")
+            raise
+
+    @classmethod
+    def slug_exists(cls, slug: str, exclude_id: str = None) -> bool:
+        """Verifica si un slug ya está en uso (excluye un ID para evitar conflicto al editar)."""
+        try:
+            collection = cls._get_collection()
+            query = {"slug": slug}
+            if exclude_id:
+                query["_id"] = {"$ne": ObjectId(exclude_id)}
+            return collection.count_documents(query) > 0
+        except PyMongoError as e:
+            print(f"Error al verificar slug en la BD: {e}")
             raise
 
     @classmethod
