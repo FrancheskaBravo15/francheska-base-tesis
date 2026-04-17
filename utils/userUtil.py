@@ -55,7 +55,7 @@ def validate_cedula(cedula: str) -> str | None:
  
     return None
  
-def validate_registration_data(identification: str, first_name: str, last_name: str, email: str, password: str) -> list[str]:
+def validate_registration_data(identification: str, first_name: str, last_name: str,phone: str, email: str, password: str) -> list[str]:
     #Valida todos los campos del formulario de registro y retorna lista de errores
     errors = []
  
@@ -70,6 +70,9 @@ def validate_registration_data(identification: str, first_name: str, last_name: 
     error = validate_required(last_name, "El apellido", 2)
     if error:
         errors.append(error)
+    error = validate_phone_number(phone)
+    if error:
+        errors.append(error)
  
     error = validate_email(email)
     if error:
@@ -78,9 +81,23 @@ def validate_registration_data(identification: str, first_name: str, last_name: 
     error = validate_password(password)
     if error:
         errors.append(error)
- 
     return errors
  
+def validate_phone_number(phone: str) -> str | None:
+    if not phone:
+        return "El número de teléfono es obligatorio"
+
+    # Convertir a string y eliminar cualquier carácter que no sea número
+    phone_str = re.sub(r'\D', '', str(phone))  # elimina todo lo que no sea dígito
+
+    if not phone_str.isdigit():
+        return "El número de teléfono debe contener solo números"
+    
+    if len(phone_str) != 10:
+        return "El número de teléfono debe tener exactamente 10 dígitos"
+    
+    return None
+
 def validate_login_data(email: str, password: str) -> list[str]:
     #Valida los campos de login
     errors = []
@@ -94,4 +111,3 @@ def validate_login_data(email: str, password: str) -> list[str]:
         errors.append(error)
  
     return errors
- 

@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% block title %}{% if is_edit %}Editar Trabajadora{% else %}Nueva Trabajadora{% endif %} - Admin{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-person-badge me-2 text-danger"></i>
+                {% if is_edit %}Editar Trabajadora{% else %}Nueva Trabajadora{% endif %}
+            </h3>
+            <a href="{{ url_for('admin.workers') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Volver
+            </a>
+        </div>
+
+        {% if is_edit and worker %}
+        <!-- Info rápida del trabajador en modo edición -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body py-2 px-3 d-flex align-items-center gap-3">
+                {% if worker.profile_photo %}
+                    <img src="{{ worker.profile_photo }}" width="44" height="44"
+                         class="rounded-circle" style="object-fit:cover;" alt="">
+                {% else %}
+                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center border"
+                         style="width:44px;height:44px;">
+                        <i class="bi bi-person-fill text-muted" style="font-size:1.2rem;"></i>
+                    </div>
+                {% endif %}
+                <div>
+                    <div class="fw-semibold">{{ worker.first_name }} {{ worker.last_name }}</div>
+                    <small class="text-muted">{{ worker.email }}</small>
+                </div>
+                <div class="ms-auto">
+                    {% if worker.is_active %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">Activa</span>
+                    {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Inactiva</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header" style="background-color:#c2185b;">
+                <h6 class="mb-0 text-white">
+                    <i class="bi bi-person-fill me-2"></i>
+                    {% if is_edit %}Datos Personales{% else %}Datos Personales y de Acceso{% endif %}
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="POST"
+                      action="{% if is_edit %}{{ url_for('admin.edit_worker', worker_id=worker.worker_id) }}{% else %}{{ url_for('admin.create_worker') }}{% endif %}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <!-- Nombres -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="first_name" required
+                                   value="{{ form_data.first_name if form_data else (worker.first_name if worker else '') }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Apellido <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="last_name" required
+                                   value="{{ form_data.last_name if form_data else (worker.last_name if worker else '') }}">
+                        </div>
+                    </div>
+
+                    <!-- Cédula y Teléfono -->
+                    <div class="row g-3 mb-3">
+                        {% if not is_edit %}
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Cédula <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="identification" required
+                                   maxlength="10" pattern="\d{10}"
+                                   value="{{ form_data.identification if form_data else '' }}">
+                        </div>
+                        {% endif %}
+                        <div class="col-md-{% if is_edit %}12{% else %}6{% endif %}">
+                            <label class="form-label fw-semibold">Teléfono <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="phone" required
+                                   maxlength="10"
+                                   value="{{ form_data.phone if form_data else (worker.phone if worker else '') }}">
+                        </div>
+                    </div>
+
+                    <!-- Email: solo en creación -->
+                    {% if not is_edit %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Correo Electrónico <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" name="email" required
+                               value="{{ form_data.email if form_data else '' }}">
+                    </div>
+                    {% else %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-muted">Correo Electrónico</label>
+                        <input type="text" class="form-control bg-light" value="{{ worker.email }}" disabled>
+                        <div class="form-text">El correo no se puede modificar desde aquí.</div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Contraseña -->
+                    {% if not is_edit %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Contraseña <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" name="password" required minlength="8">
+                        <div class="form-text">Mínimo 8 caracteres.</div>
+                    </div>
+                    {% else %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nueva Contraseña <span class="text-muted fw-normal">(opcional)</span></label>
+                        <input type="password" class="form-control" name="new_password" minlength="8"
+                               placeholder="Dejar en blanco para mantener la contraseña actual">
+                        <div class="form-text">Solo completa este campo si deseas cambiar la contraseña. Mínimo 8 caracteres.</div>
+                    </div>
+                    {% endif %}
+
+                    <hr>
+
+                    <!-- Especialidades -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Especialidades <span class="text-danger">*</span></label>
+                        <div class="form-text mb-2">Selecciona las especialidades de la trabajadora:</div>
+                        <div class="row g-2">
+                            {% set sp_list = ['Manicura', 'Pedicura', 'Cabello', 'Maquillaje', 'Facial', 'Depilación', 'Masajes', 'Uñas Acrílicas', 'Cejas y Pestañas'] %}
+                            {% for sp in sp_list %}
+                            <div class="col-6 col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="specialties"
+                                           value="{{ sp }}" id="sp_{{ loop.index }}"
+                                           {% if form_data and sp in form_data.getlist('specialties') %}checked
+                                           {% elif worker and sp in worker.specialties %}checked
+                                           {% elif categories and sp in categories and not worker %}checked{% endif %}>
+                                    <label class="form-check-label" for="sp_{{ loop.index }}">{{ sp }}</label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <!-- Categorías personalizadas que no están en la lista estándar -->
+                        {% for cat in categories %}
+                            {% if cat not in sp_list %}
+                            <div class="mt-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="specialties"
+                                           value="{{ cat }}"
+                                           {% if form_data and cat in form_data.getlist('specialties') %}checked
+                                           {% elif worker and cat in worker.specialties %}checked{% endif %}>
+                                    <label class="form-check-label">{{ cat }}</label>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <!-- Biografía -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Biografía / Descripción</label>
+                        <textarea class="form-control" name="bio" rows="2"
+                                  placeholder="Años de experiencia, especialización, etc.">{{ form_data.bio if form_data else (worker.bio if worker else '') }}</textarea>
+                    </div>
+
+                    {% if not is_edit %}
+                    <div class="alert alert-info small mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Después de crear la trabajadora, podrás configurar su <strong>horario de disponibilidad</strong> desde la lista de trabajadoras.
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger px-4">
+                            {% if is_edit %}
+                                <i class="bi bi-floppy me-2"></i>Guardar Cambios
+                            {% else %}
+                                <i class="bi bi-person-plus me-2"></i>Crear Trabajadora
+                            {% endif %}
+                        </button>
+                        <a href="{{ url_for('admin.workers') }}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

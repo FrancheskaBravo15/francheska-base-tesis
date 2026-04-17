@@ -58,3 +58,23 @@ class PersonRepository:
         except PyMongoError as e:
             print(f"Error al buscar una identificacion en la BD: {e}")
             raise
+
+    @classmethod
+    def update_by_user_id(cls, user_id: str, data: dict) -> None:
+        #Actualiza datos personales por user_id
+        try:
+            collection = cls._get_collection()
+            collection.update_one({"user_id": user_id}, {"$set": data})
+        except PyMongoError as e:
+            print(f"Error al actualizar persona en la BD: {e}")
+            raise
+
+    @classmethod
+    def find_all(cls):
+        #Obtiene todos los registros de personas
+        try:
+            collection = cls._get_collection()
+            return [PersonModel.from_dict(p) for p in collection.find()]
+        except PyMongoError as e:
+            print(f"Error al obtener todas las personas en la BD: {e}")
+            raise

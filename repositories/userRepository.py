@@ -91,3 +91,13 @@ class UserRepository:
         except PyMongoError as e:
             print(f"Error al buscar usuario por rol en la BD: {e}")
             raise
+
+    @classmethod
+    def update(cls, user_id: str, data: dict) -> None:
+        #Actualiza campos del usuario
+        try:
+            collection = cls._get_collection()
+            collection.update_one({"_id": ObjectId(user_id)}, {"$set": data})
+        except PyMongoError as e:
+            print(f"Error al actualizar usuario en la BD: {e}")
+            raise

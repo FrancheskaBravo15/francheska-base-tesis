@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+{% block title %}{{ service.name }} - Shirley Buenaño{% endblock %}
+
+{% block body %}
+<div class="row g-4">
+    <!-- Columna principal -->
+    <div class="col-lg-8">
+
+        <!-- Servicio -->
+        <div class="card border-0 shadow-sm mb-4">
+            {% if service.image_url %}
+                <img src="{{ service.image_url }}" class="card-img-top" alt="{{ service.name }}"
+                     style="height:280px;object-fit:cover;">
+            {% endif %}
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+                    <div>
+                        <span class="badge mb-2" style="background-color:#c2185b;">{{ service.category }}</span>
+                        <h3 class="fw-bold mb-1">{{ service.name }}</h3>
+                        <!-- Rating -->
+                        <div class="d-flex align-items-center gap-2">
+                            {% for i in range(1, 6) %}
+                                <i class="bi bi-star{% if i <= avg_rating|round(0, 'floor') %}-fill text-warning{% elif i - 0.5 <= avg_rating %}-half text-warning{% else %} text-secondary{% endif %}"></i>
+                            {% endfor %}
+                            <span class="text-muted small">({{ total_reviews }} reseña{{ 's' if total_reviews != 1 }})</span>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fs-2 fw-bold text-danger">${{ "%.2f"|format(service.price) }}</div>
+                        <div class="text-muted small"><i class="bi bi-clock me-1"></i>{{ service.duration_minutes }} min</div>
+                    </div>
+                </div>
+
+                {% if service.description %}
+                    <p class="text-muted">{{ service.description }}</p>
+                {% endif %}
+
+                <!-- Consejos del servicio -->
+                <div class="alert border-0 mt-3" style="background-color:#fce4ec;">
+                    <h6 class="fw-bold mb-2"><i class="bi bi-lightbulb me-2 text-danger"></i>Consejos para tu cita</h6>
+                    <ul class="mb-0 small">
+                        <li>Duración estimada del servicio: <strong>{{ service.duration_minutes }} minutos</strong>. Llega 5 minutos antes.</li>
+                        <li>Precio: <strong>${{ "%.2f"|format(service.price) }}</strong>. El pago se realiza al confirmar la reserva.</li>
+                        {% if service.category == 'Manicura' or service.category == 'Uñas Acrílicas' %}
+                            <li>Retira el esmalte anterior antes de tu cita para agilizar el proceso.</li>
+                            <li>Evita usar cremas en las manos el día de la cita para mejor adherencia.</li>
+                        {% elif service.category == 'Pedicura' %}
+                            <li>Usa calzado abierto o sandalias para no dañar el trabajo al salir.</li>
+                            <li>Remoja los pies la noche anterior para suavizar la piel.</li>
+                        {% elif service.category == 'Cabello' %}
+                            <li>Llega con el cabello limpio y sin productos de peinado.</li>
+                            <li>Trae referencias visuales del estilo que deseas.</li>
+                        {% elif service.category == 'Maquillaje' %}
+                            <li>Llega con el rostro limpio y sin maquillaje previo.</li>
+                            <li>Menciona alergias a productos cosméticos al inicio de la cita.</li>
+                        {% elif service.category == 'Facial' %}
+                            <li>No apliques maquillaje el día de la cita.</li>
+                            <li>Informa sobre productos que usas actualmente en tu rutina de cuidado.</li>
+                        {% else %}
+                            <li>Llega puntual para aprovechar al máximo el tiempo del servicio.</li>
+                            <li>Comunica cualquier condición especial a la especialista antes de iniciar.</li>
+                        {% endif %}
+                        <li>Las citas canceladas no tienen devolución de dinero.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección de Reserva -->
+        {% if current_user and current_user.role == 'client' %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header" style="background-color:#c2185b;">
+                <h5 class="mb-0 text-white"><i class="bi bi-calendar-plus me-2"></i>Reservar este Servicio</h5>
+            </div>
+            <div class="card-body">
+                {% if workers %}
+                    <form method="POST" action="{{ url_for('cart.add') }}" id="bookingForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="service_id" value="{{ service.id }}">
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Seleccionar Especialista</label>
+                                <select class="form-select" name="worker_id" id="workerSelect" required>
+                                    <option value="">-- Elige una especialista --</option>
+                                    {% for worker in workers %}
+                                        <option value="{{ worker.worker_id }}">
+                                            {{ worker.first_name }} {{ worker.last_name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Fecha</label>
+                                <input type="date" class="form-control" id="dateInput" name="date"
+                                       min="" required>
+                            </div>
+                        </div>
+
+                        <!-- Slots disponibles -->
+                        <div class="mt-3" id="slotsContainer" style="display:none;">
+                            <label class="form-label fw-semibold">Horario Disponible</label>
+                            <input type="hidden" name="start_time" id="selectedTime">
+                            <div id="slotsList" class="d-flex flex-wrap gap-2"></div>
+                            <div id="noSlotsMsg" class="text-muted small mt-2" style="display:none;">
+                                <i class="bi bi-exclamation-circle me-1"></i>No hay horarios disponibles para esta fecha.
+                            </div>
+                        </div>
+
+                        <div class="mt-3" id="submitContainer" style="display:none;">
+                            <button type="submit" class="btn btn-danger px-4">
+                                <i class="bi bi-cart-plus me-2"></i>Agregar al Carrito
+                            </button>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="text-center py-3 text-muted">
+                        <i class="bi bi-person-x" style="font-size:2rem;"></i>
+                        <p class="mt-2 mb-0 small">No hay especialistas disponibles para este servicio actualmente.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% elif not current_user %}
+        <div class="alert border-0" style="background-color:#fce4ec;">
+            <i class="bi bi-lock me-2 text-danger"></i>
+            <a href="{{ url_for('users.login') }}" class="text-danger fw-semibold">Inicia sesión</a>
+            para reservar este servicio o
+            <a href="{{ url_for('users.register') }}" class="text-danger fw-semibold">crea una cuenta</a>.
+        </div>
+        {% endif %}
+
+        <!-- Trabajadoras disponibles (info) -->
+        {% if workers %}
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom">
+                <h6 class="fw-bold mb-0"><i class="bi bi-people me-2 text-danger"></i>Nuestras Especialistas</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% for worker in workers %}
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center gap-3 p-2 rounded-3 bg-light">
+                            {% if worker.profile_photo %}
+                                <img src="{{ worker.profile_photo }}" width="48" height="48"
+                                     class="rounded-circle" style="object-fit:cover;" alt="">
+                            {% else %}
+                                <div class="rounded-circle bg-white d-flex align-items-center justify-content-center border"
+                                     style="width:48px;height:48px;">
+                                    <i class="bi bi-person-fill text-muted" style="font-size:1.3rem;"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <div class="fw-semibold small">{{ worker.first_name }} {{ worker.last_name }}</div>
+                                <div class="text-muted" style="font-size:0.75rem;">{{ worker.specialties|join(', ') }}</div>
+                                {% if worker.bio %}
+                                    <div class="text-muted" style="font-size:0.72rem;">{{ worker.bio[:50] }}...</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Reseñas -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0">
+                    <i class="bi bi-star me-2 text-warning"></i>Reseñas ({{ total_reviews }})
+                </h6>
+                <span class="fw-bold text-warning">{{ "%.1f"|format(avg_rating) }} / 5</span>
+            </div>
+            <div class="card-body">
+                <!-- Formulario agregar reseña -->
+                {% if current_user and current_user.role == 'client' and not user_reviewed %}
+                <div class="mb-4 p-3 rounded-3 bg-light">
+                    <h6 class="fw-semibold mb-3">Deja tu reseña</h6>
+                    <form method="POST" action="{{ url_for('reviews.add') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="service_id" value="{{ service.id }}">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Puntuación</label>
+                            <div class="d-flex gap-2">
+                                {% for i in range(1, 6) %}
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="rating"
+                                               id="star{{ i }}" value="{{ i }}" required>
+                                        <label class="form-check-label" for="star{{ i }}">
+                                            <i class="bi bi-star-fill text-warning"></i> {{ i }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <textarea class="form-control" name="comment" rows="2"
+                                      placeholder="Comparte tu experiencia con este servicio..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-warning">
+                            <i class="bi bi-send me-1"></i>Publicar Reseña
+                        </button>
+                    </form>
+                </div>
+                {% elif current_user and current_user.role == 'client' and user_reviewed %}
+                <div class="alert alert-info small mb-4">
+                    <i class="bi bi-check-circle me-2"></i>Ya dejaste una reseña para este servicio.
+                </div>
+                {% endif %}
+
+                <!-- Lista de reseñas -->
+                {% if reviews %}
+                    {% for review in reviews %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="fw-semibold small">{{ review.user_name }}</span>
+                                <div class="text-muted" style="font-size:0.75rem;">
+                                    {% for i in range(1, 6) %}
+                                        <i class="bi bi-star{% if i <= review.rating %}-fill text-warning{% else %} text-secondary{% endif %}"></i>
+                                    {% endfor %}
+                                    <span class="ms-2">{{ review.created_at.strftime('%d/%m/%Y') if review.created_at else '' }}</span>
+                                </div>
+                            </div>
+                            {% if review.is_own or (current_user and current_user.role == 'admin') %}
+                                <form method="POST" action="{{ url_for('reviews.delete', review_id=review.review_id) }}"
+                                      onsubmit="return confirm('¿Eliminar esta reseña?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="service_id" value="{{ service.id }}">
+                                    <button class="btn btn-sm btn-link text-danger p-0">
+                                        <i class="bi bi-trash small"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                        {% if review.comment %}
+                            <p class="small text-muted mt-1 mb-0">{{ review.comment }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted small text-center py-3">Sé el primero en dejar una reseña.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Favoritos -->
+        {% if current_user and current_user.role == 'client' %}
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body text-center">
+                <form method="POST" action="{{ url_for('wishlist.toggle') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="service_id" value="{{ service.id }}">
+                    <button type="submit" class="btn {% if in_wishlist %}btn-danger{% else %}btn-outline-danger{% endif %} w-100">
+                        <i class="bi bi-heart{% if in_wishlist %}-fill{% endif %} me-2"></i>
+                        {% if in_wishlist %}En Favoritos{% else %}Agregar a Favoritos{% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Resumen -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header" style="background-color:#c2185b;">
+                <h6 class="mb-0 text-white"><i class="bi bi-info-circle me-2"></i>Resumen del Servicio</h6>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-6 text-muted">Categoría</dt>
+                    <dd class="col-6">{{ service.category }}</dd>
+                    <dt class="col-6 text-muted">Duración</dt>
+                    <dd class="col-6">{{ service.duration_minutes }} minutos</dd>
+                    <dt class="col-6 text-muted">Precio</dt>
+                    <dd class="col-6 fw-bold text-danger">${{ "%.2f"|format(service.price) }}</dd>
+                    <dt class="col-6 text-muted">Calificación</dt>
+                    <dd class="col-6">{{ "%.1f"|format(avg_rating) }} ⭐ ({{ total_reviews }})</dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Navegar -->
+        <a href="{{ url_for('services.catalog') }}" class="btn btn-outline-secondary w-100">
+            <i class="bi bi-arrow-left me-2"></i>Volver al Catálogo
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const serviceSlug = "{{ service.slug }}";
+
+function loadSlots() {
+    const workerId  = document.getElementById('workerSelect').value;
+    const date      = document.getElementById('dateInput').value;
+    const container = document.getElementById('slotsContainer');
+    const list      = document.getElementById('slotsList');
+    const noSlots   = document.getElementById('noSlotsMsg');
+    const submit    = document.getElementById('submitContainer');
+    const timeInput = document.getElementById('selectedTime');
+
+    timeInput.value = '';
+    list.innerHTML  = '';
+    submit.style.display = 'none';
+
+    if (!workerId || !date) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+    list.innerHTML = '<span class="text-muted small"><i class="bi bi-hourglass-split me-1"></i>Cargando horarios...</span>';
+    noSlots.style.display = 'none';
+
+    fetch(`/services/${serviceSlug}/slots?worker_id=${workerId}&date=${date}`)
+        .then(r => r.json())
+        .then(data => {
+            list.innerHTML = '';
+            if (data.slots && data.slots.length > 0) {
+                noSlots.style.display = 'none';
+                data.slots.forEach(slot => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'btn btn-sm btn-outline-danger slot-btn';
+                    btn.textContent = slot.start;
+                    btn.dataset.time = slot.start;
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('btn-danger', 'text-white'));
+                        btn.classList.add('btn-danger', 'text-white');
+                        timeInput.value = slot.start;
+                        submit.style.display = 'block';
+                    });
+                    list.appendChild(btn);
+                });
+            } else {
+                noSlots.style.display = 'block';
+            }
+        })
+        .catch(() => {
+            list.innerHTML = '<span class="text-danger small">Error al cargar horarios</span>';
+        });
+}
+
+document.getElementById('workerSelect')?.addEventListener('change', loadSlots);
+document.getElementById('dateInput')?.addEventListener('change', loadSlots);
+
+// Fecha mínima = hoy
+const today = new Date().toISOString().split('T')[0];
+const dateInput = document.getElementById('dateInput');
+if (dateInput) dateInput.min = today;
+</script>
+{% endblock %}

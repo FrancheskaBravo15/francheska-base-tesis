@@ -1,40 +1,104 @@
 {% extends 'base.html' %}
- 
+{% block title %}Mi Perfil - Shirley Buenaño{% endblock %}
+
 {% block body %}
- 
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h4 class="card-title text-center mb-4">Mi Perfil</h4>
- 
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Identificación</label>
-                    <p class="form-control-plaintext">{{ current_user.identification }}</p>
-                </div>
- 
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Nombre</label>
-                    <p class="form-control-plaintext">{{ current_user.first_name }}</p>
-                </div>
- 
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Apellido</label>
-                    <p class="form-control-plaintext">{{ current_user.last_name }}</p>
-                </div>
- 
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Correo Electrónico</label>
-                    <p class="form-control-plaintext">{{ current_user.email }}</p>
-                </div>
- 
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Rol</label>
-                    <p class="form-control-plaintext text-capitalize">{{ current_user.role }}</p>
-                </div>
+
+        <!-- Tarjeta de foto -->
+        <div class="card shadow-sm border-0 mb-4 text-center">
+            <div class="card-body py-4">
+                {% if current_user.profile_photo %}
+                    <img src="{{ current_user.profile_photo }}" alt="Foto de perfil"
+                         class="rounded-circle mb-3 border border-3"
+                         style="width:110px;height:110px;object-fit:cover;border-color:#c2185b!important;">
+                {% else %}
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3 border border-3"
+                         style="width:110px;height:110px;background:#fce4ec;border-color:#c2185b!important;">
+                        <i class="bi bi-person-fill text-danger" style="font-size:3rem;"></i>
+                    </div>
+                {% endif %}
+                <h5 class="fw-bold mb-0">{{ current_user.first_name }} {{ current_user.last_name }}</h5>
+                <span class="badge mt-1" style="background-color:#c2185b;">{{ current_user.role }}</span>
+                <p class="text-muted small mt-1 mb-0">{{ current_user.email }}</p>
             </div>
+        </div>
+
+        <!-- Formulario de edición -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header" style="background-color:#c2185b;">
+                <h5 class="mb-0 text-white"><i class="bi bi-pencil-square me-2"></i>Editar Perfil</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('users.profile') }}" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Foto de Perfil</label>
+                        <input type="file" class="form-control" name="profile_photo"
+                               accept=".jpg,.jpeg,.png,.webp">
+                        <div class="form-text">Formatos: JPG, PNG, WEBP. Máx. 2MB.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nombre</label>
+                        <input type="text" class="form-control" name="first_name"
+                               value="{{ current_user.first_name }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Apellido</label>
+                        <input type="text" class="form-control" name="last_name"
+                               value="{{ current_user.last_name }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Teléfono</label>
+                        <input type="text" class="form-control" name="phone"
+                               value="{{ current_user.phone }}" maxlength="10">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Cédula</label>
+                        <input type="text" class="form-control" value="{{ current_user.identification }}" disabled>
+                        <div class="form-text">La cédula no puede modificarse.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Correo Electrónico</label>
+                        <input type="text" class="form-control" value="{{ current_user.email }}" disabled>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-save me-2"></i>Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Links rápidos según rol -->
+        <div class="mt-4">
+            {% if current_user.role == 'client' %}
+                <div class="row g-2">
+                    <div class="col-6">
+                        <a href="{{ url_for('appointments.my_appointments') }}" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-calendar-check me-1"></i>Mis Citas
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('wishlist.view') }}" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-heart me-1"></i>Favoritos
+                        </a>
+                    </div>
+                </div>
+            {% elif current_user.role == 'worker' %}
+                <a href="{{ url_for('worker.dashboard') }}" class="btn btn-outline-danger w-100">
+                    <i class="bi bi-person-badge me-1"></i>Ir a Mi Panel
+                </a>
+            {% endif %}
         </div>
     </div>
 </div>
- 
 {% endblock %}

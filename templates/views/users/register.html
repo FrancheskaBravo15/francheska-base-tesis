@@ -1,54 +1,79 @@
 {% extends 'base.html' %}
+{% block title %}Registro - Shirley Buenaño{% endblock %}
 
 {% block body %}
-
-
 <div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h4 class="card-title text-center mb-4">Registro</h4>
+    <div class="col-md-7 col-lg-6">
+        <div class="text-center mb-4">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                 style="width:70px;height:70px;background:#fce4ec;">
+                <i class="bi bi-person-plus text-danger" style="font-size:2rem;"></i>
+            </div>
+            <h4 class="fw-bold">Crear Cuenta</h4>
+            <p class="text-muted small">Únete y reserva tus citas fácilmente</p>
+        </div>
 
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
                 <form method="POST" action="{{ url_for('users.register') }}">
-
-                    <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                     <div class="mb-3">
-                        <label for="identification" class="form-label">Identification</label>
-                        <input type="text" class="form-control" id="identification" name="identification" value="{{ identification | default('') }}" required>
+                        <label class="form-label fw-semibold">Cédula de Identidad <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="identification"
+                               value="{{ identification | default('') }}"
+                               maxlength="10" pattern="\d{10}"
+                               placeholder="0000000000" required>
+                        <div class="form-text">10 dígitos, cédula ecuatoriana válida.</div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="first_name"
+                                   value="{{ first_name | default('') }}" placeholder="María" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Apellido <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" name="last_name"
+                                   value="{{ last_name | default('') }}" placeholder="García" required>
+                        </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="first_name" class="form-label">First Name</label>
-                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ first_name | default('') }}" required>
+                        <label class="form-label fw-semibold">Teléfono <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="phone"
+                               value="{{ phone | default('') }}"
+                               maxlength="10" placeholder="0999999999" required>
+                        <div class="form-text">10 dígitos.</div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="last_name" class="form-label">Last Name</label>
-                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ last_name | default('') }}" required>
+                        <label class="form-label fw-semibold">Correo Electrónico <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" name="email"
+                               value="{{ email | default('') }}" placeholder="tu@correo.com" required>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" value="{{ email | default('') }}" required>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Contraseña <span class="text-danger">*</span></label>
+                        <input type="password" class="form-control" name="password"
+                               minlength="8" placeholder="Mínimo 8 caracteres" required>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Contraseña</label>
-                        <input type="password" class="form-control" id="password" name="password" value="{{ email | default('') }}" required>
-                    </div>
-
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">
-                            Registrarse
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="bi bi-person-check me-2"></i>Crear Cuenta
                         </button>
                     </div>
 
+                    <div class="text-center">
+                        <small class="text-muted">¿Ya tienes cuenta?
+                            <a href="{{ url_for('users.login') }}" class="text-danger fw-semibold text-decoration-none">Inicia sesión aquí</a>
+                        </small>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
-
-
 {% endblock %}

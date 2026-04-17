@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Horario - {{ worker.first_name }} - Admin{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-clock me-2 text-danger"></i>Horario de {{ worker.first_name }} {{ worker.last_name }}
+            </h3>
+            <a href="{{ url_for('admin.workers') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Volver
+            </a>
+        </div>
+
+        <div class="alert alert-info small">
+            <i class="bi bi-info-circle me-2"></i>
+            Define los bloques horarios disponibles para cada día de la semana. Puedes agregar múltiples turnos por día (ej: 09:00-13:00 y 14:00-18:00).
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <form method="POST" id="scheduleForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    {% for day in days %}
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <h6 class="fw-bold mb-0" style="min-width:120px;">
+                                <i class="bi bi-calendar-day me-1 text-danger"></i>{{ day }}
+                            </h6>
+                            <button type="button" class="btn btn-sm btn-outline-success"
+                                    onclick="addSlot('{{ day }}')">
+                                <i class="bi bi-plus me-1"></i>Agregar turno
+                            </button>
+                        </div>
+
+                        <div id="slots_{{ day }}">
+                            {% if worker.availability and day in worker.availability %}
+                                {% for slot in worker.availability[day] %}
+                                <div class="d-flex align-items-center gap-2 mb-2 slot-row">
+                                    <input type="time" class="form-control form-control-sm" style="max-width:130px;"
+                                           name="{{ day }}_start[]" value="{{ slot.start }}" required>
+                                    <span class="text-muted">a</span>
+                                    <input type="time" class="form-control form-control-sm" style="max-width:130px;"
+                                           name="{{ day }}_end[]" value="{{ slot.end }}" required>
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            onclick="this.closest('.slot-row').remove()">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted small mb-0">Sin turno configurado (día libre)</p>
+                            {% endif %}
+                        </div>
+                        <hr class="my-3">
+                    </div>
+                    {% endfor %}
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger px-4">
+                            <i class="bi bi-save me-2"></i>Guardar Horario
+                        </button>
+                        <a href="{{ url_for('admin.workers') }}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addSlot(day) {
+    const container = document.getElementById('slots_' + day);
+    // Remover el texto "Sin turno" si existe
+    const emptyMsg = container.querySelector('p');
+    if (emptyMsg) emptyMsg.remove();
+
+    const row = document.createElement('div');
+    row.className = 'd-flex align-items-center gap-2 mb-2 slot-row';
+    row.innerHTML = `
+        <input type="time" class="form-control form-control-sm" style="max-width:130px;"
+               name="${day}_start[]" value="09:00" required>
+        <span class="text-muted">a</span>
+        <input type="time" class="form-control form-control-sm" style="max-width:130px;"
+               name="${day}_end[]" value="13:00" required>
+        <button type="button" class="btn btn-sm btn-outline-danger"
+                onclick="this.closest('.slot-row').remove()">
+            <i class="bi bi-trash"></i>
+        </button>
+    `;
+    container.appendChild(row);
+}
+</script>
+{% endblock %}

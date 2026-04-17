@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Mi Panel - Trabajadora{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0">
+        <i class="bi bi-person-badge me-2 text-danger"></i>
+        Bienvenida, {{ worker.first_name if worker else current_user.first_name }}
+    </h3>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <i class="bi bi-calendar-check text-success" style="font-size:2rem;"></i>
+            <div class="fs-4 fw-bold mt-1">{{ today_appointments|length }}</div>
+            <div class="text-muted small">Citas Activas</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <i class="bi bi-cash-coin text-danger" style="font-size:2rem;"></i>
+            <div class="fs-4 fw-bold mt-1 text-danger">${{ "%.2f"|format(total_earned) }}</div>
+            <div class="text-muted small">Total Recaudado</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <i class="bi bi-scissors" style="font-size:2rem;color:#c2185b;"></i>
+            <div class="fs-5 fw-bold mt-1">{{ worker.specialties|join(', ') if worker and worker.specialties else 'N/A' }}</div>
+            <div class="text-muted small">Especialidades</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card border-0 shadow-sm text-center py-3 h-100">
+            <div class="d-flex flex-column align-items-center justify-content-center h-100 gap-2 py-2">
+                <a href="{{ url_for('worker.schedule') }}" class="btn btn-outline-danger btn-sm w-75">
+                    <i class="bi bi-clock me-1"></i>Mi Horario
+                </a>
+                <a href="{{ url_for('worker.appointments') }}" class="btn btn-outline-secondary btn-sm w-75">
+                    <i class="bi bi-calendar-check me-1"></i>Mis Citas
+                </a>
+                <a href="{{ url_for('users.profile') }}" class="btn btn-outline-secondary btn-sm w-75">
+                    <i class="bi bi-person me-1"></i>Mi Perfil
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Citas de hoy -->
+<h5 class="fw-bold mb-3"><i class="bi bi-calendar-day me-2 text-danger"></i>Citas Pendientes</h5>
+{% if today_appointments %}
+    <div class="row g-3">
+        {% for appt in today_appointments %}
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="fw-bold mb-0">{{ appt.service_name }}</h6>
+                        <span class="badge bg-success">Confirmada</span>
+                    </div>
+                    <div class="text-muted small mb-3">
+                        <div><i class="bi bi-person me-2"></i>{{ appt.client_name }}</div>
+                        <div><i class="bi bi-calendar me-2"></i>{{ appt.date }}</div>
+                        <div><i class="bi bi-clock me-2"></i>{{ appt.start_time }} - {{ appt.end_time }}</div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-danger">${{ "%.2f"|format(appt.total_price) }}</span>
+                        <form method="POST" action="{{ url_for('worker.complete_appointment', appointment_id=appt.appointment_id) }}"
+                              onsubmit="return confirm('¿Marcar cita como completada?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-sm btn-success">
+                                <i class="bi bi-check-circle me-1"></i>Completar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert border-0" style="background-color:#fce4ec;">
+        <i class="bi bi-calendar-check me-2 text-danger"></i>No tienes citas pendientes actualmente.
+        <a href="{{ url_for('worker.schedule') }}" class="text-danger fw-semibold">Configura tu horario</a> para recibir clientes.
+    </div>
+{% endif %}
+{% endblock %}

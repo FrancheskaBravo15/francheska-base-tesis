@@ -1,50 +1,113 @@
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm">
     <div class="container">
-        <a class="navbar-brand" href="/">Instituto Tecnológico Bolivar Madero Vargas</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
-            aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
+            <img src="/img/logo.jpeg" alt="Logo" width="36" height="36" class="rounded-circle logo-img"> Shirley Buenaño
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
             <span class="navbar-toggler-icon"></span>
         </button>
- 
-        <div class="collapse navbar-collapse" id="mainNavbar">
-            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+
+        <div class="collapse navbar-collapse" id="navbarMain">
+
+            <!-- MENÚ IZQUIERDA -->
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.path == '/' }}" href="/">Inicio</a>
+                    <a class="nav-link {{ 'active' if request.path == '/' }}" href="{{ url_for('index.indexRoute') }}">
+                        <i class="bi bi-house-door me-1"></i>Inicio
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.path == '/about' }}" href="/about">Acerca de Nosotros</a>
+                    <a class="nav-link {{ 'active' if request.path.startswith('/services') }}" href="{{ url_for('services.catalog') }}">
+                        <i class="bi bi-scissors me-1"></i>Servicios
+                    </a>
                 </li>
- 
-                {% if current_user %}
-                    {% if current_user.role in ('admin', 'operator') %}
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.path.startswith('/admin') }}" href="">Panel de Administración</a>
-                    </li>
-                    {% endif %}
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.path == '/users/profile' }}" href="{{ url_for('users.profile') }}">
-                            Hola, {{ current_user.first_name }}
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <form method="POST" action="{{ url_for('users.logout') }}" class="d-inline">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="nav-link btn btn-link" style="text-decoration: none;">
-                                Cerrar Sesión
-                            </button>
-                        </form>
-                    </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.path == '/about' }}" href="{{ url_for('index.aboutRoute') }}">
+                        <i class="bi bi-info-circle me-1"></i>Nosotros
+                    </a>
+                </li>
+            </ul>
+
+            <!-- MENÚ DERECHA -->
+            <ul class="navbar-nav ms-auto align-items-center gap-2">
+
+                {% if current_user %} {% if current_user.role == 'admin' %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {{ 'active' if request.path.startswith('/admin') }}" href="#" data-bs-toggle="dropdown">
+                        <i class="bi bi-shield-lock me-1"></i>Admin
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('admin.panel') }}">Panel</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.users') }}">Usuarios</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.services') }}">Servicios</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.workers') }}">Trabajadoras</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.appointments') }}">Citas</a></li>
+                    </ul>
+                </li>
+
+                {% elif current_user.role == 'worker' %}
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('worker.dashboard') }}">Mi Panel</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('worker.appointments') }}">Mis Citas</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('worker.schedule') }}">Horario</a></li>
+
                 {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.path == '/users/login' }}" href="{{ url_for('users.login') }}">Iniciar Sesión</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.path == '/users/register' }}" href="{{ url_for('users.register') }}">Registrarse</a>
-                    </li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('wishlist.view') }}">Favoritos</a></li>
+                <li class="nav-item">
+                    <a class="nav-link position-relative" href="{{ url_for('cart.view_cart') }}">
+                            Carrito
+                            {% if cart_count and cart_count > 0 %}
+                            <span class="badge bg-white text-dark position-absolute top-0 start-100 translate-middle">
+                                {{ cart_count }}
+                            </span>
+                            {% endif %}
+                        </a>
+                </li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('appointments.my_appointments') }}">Mis Citas</a></li>
                 {% endif %}
+
+                <!-- PERFIL -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" data-bs-toggle="dropdown">
+                            {% if current_user.profile_photo %}
+                                <img src="{{ current_user.profile_photo }}" class="profile-img">
+                            {% else %}
+                                <span class="profile-icon">
+                                    <i class="bi bi-person-fill"></i>
+                                </span>
+                            {% endif %}
+                            {{ current_user.first_name }}
+                        </a>
+
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><span class="dropdown-item-text small text-muted">{{ current_user.email }}</span></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="{{ url_for('users.profile') }}">Mi Perfil</a></li>
+                        <li>
+                            <form action="{{ url_for('users.logout') }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button class="dropdown-item text-danger">Cerrar sesión</button>
+                            </form>
+                        </li>
+                    </ul>
+                </li>
+
+                {% else %}
+
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('users.login') }}">Ingresar</a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-register ms-2" href="{{ url_for('users.register') }}">
+                            Registrarse
+                        </a>
+                </li>
+
+                {% endif %}
+
             </ul>
         </div>
     </div>
 </nav>
- 
