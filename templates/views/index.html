@@ -18,18 +18,31 @@
     </div>
 </div>
 
-<!-- Categorías -->
+<!-- Categorías con foto -->
 {% if categories %}
 <div class="mb-5">
-    <h4 class="fw-bold mb-3"><i class="bi bi-grid me-2 text-primary"></i>Categorías</h4>
-    <div class="d-flex flex-wrap gap-2">
-        <a href="{{ url_for('services.catalog') }}" class="btn btn-outline-primary btn-sm">
-            <i class="bi bi-grid-fill me-1"></i>Todas
-        </a>
+    <h4 class="fw-bold mb-4"><i class="bi bi-grid me-2 text-danger"></i>Nuestras Categorías</h4>
+    <div class="row g-3">
         {% for cat in categories %}
-        <a href="{{ url_for('services.catalog', category=cat) }}" class="btn btn-sm" style="background-color:#f3e5f5; color:#4a148c;">
-            {{ cat }}
-        </a> {% endfor %}
+        <div class="col-6 col-md-4 col-lg-3">
+            <a href="{{ url_for('services.catalog', category=cat.name) }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 overflow-hidden category-card">
+                    {% if cat.image_url %}
+                        <img src="{{ cat.image_url }}" class="card-img-top"
+                             alt="{{ cat.name }}" style="height:130px;object-fit:cover;">
+                    {% else %}
+                        <div class="d-flex align-items-center justify-content-center"
+                             style="height:130px;background:linear-gradient(135deg,#fce4ec,#f8bbd0);">
+                            <i class="bi bi-scissors" style="font-size:2.5rem;color:#c2185b;"></i>
+                        </div>
+                    {% endif %}
+                    <div class="card-body py-2 px-3 text-center">
+                        <span class="fw-semibold" style="color:#c2185b;font-size:.95rem;">{{ cat.name }}</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
     </div>
 </div>
 {% endif %}
@@ -42,7 +55,8 @@
     <div class="col-sm-6 col-lg-4">
         <div class="card h-100 shadow-sm border-0">
             {% if service.image_url %}
-            <img src="{{ service.image_url }}" class="card-img-top" alt="{{ service.name }}" style="height:180px;object-fit:cover;"> {% else %}
+            <img src="{{ service.image_url }}" class="card-img-top" alt="{{ service.name }}" style="height:180px;object-fit:cover;">
+            {% else %}
             <div class="d-flex align-items-center justify-content-center" style="height:180px;background-color:#f3e5f5;">
                 <i class="bi bi-scissors text-primary" style="font-size:3rem;"></i>
             </div>
@@ -51,7 +65,7 @@
                 <span class="badge mb-2" style="background-color:#b388ff;">{{ service.category }}</span>
                 <h6 class="card-title fw-bold">{{ service.name }}</h6>
                 <p class="card-text text-muted small">
-                    {{ service.description[:80] if service.description else '' }} {% if service.description and service.description|length > 80 %}...{% endif %}
+                    {{ service.description[:80] if service.description else '' }}{% if service.description and service.description|length > 80 %}...{% endif %}
                 </p>
                 <div class="d-flex justify-content-between align-items-center mt-2">
                     <div>
@@ -120,31 +134,24 @@
 </div>
 
 <!-- Testimonios -->
+{% if testimonials %}
 <div class="mt-5 p-5 bg-light rounded-4 shadow-sm text-center">
-    <h4 class="fw-bold mb-4"><i class="bi bi-chat-quote text-primary me-2"></i>Lo que dicen nuestras clientas</h4>
+    <h4 class="fw-bold mb-4"><i class="bi bi-chat-quote text-danger me-2"></i>Lo que dicen nuestras clientas</h4>
     <div class="row g-4">
+        {% for t in testimonials %}
         <div class="col-md-4">
             <div class="p-3 bg-white rounded shadow-sm h-100">
-                <p class="small text-muted">“Excelente atención y resultados increíbles. Me sentí como en casa.”</p>
-                <div class="text-warning"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
-                <small class="fw-bold">María P.</small>
+                <p class="small text-muted fst-italic">"{{ t.comment }}"</p>
+                <div class="text-warning mb-1">
+                    {% for i in range(t.rating) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                    {% for i in range(5 - t.rating) %}<i class="bi bi-star text-muted"></i>{% endfor %}
+                </div>
+                <small class="fw-bold">{{ t.author_name }}</small>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="p-3 bg-white rounded shadow-sm h-100">
-                <p class="small text-muted">“Los servicios son de primera calidad, siempre vuelvo feliz.”</p>
-                <div class="text-warning"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
-                <small class="fw-bold">Carolina R.</small>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="p-3 bg-white rounded shadow-sm h-100">
-                <p class="small text-muted">“Me encantó el maquillaje, muy profesional y duradero.”</p>
-                <div class="text-warning"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star
--fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
-                <small class="fw-bold">Lucía M.</small>
-            </div>
-        </div>
+        {% endfor %}
     </div>
 </div>
+{% endif %}
+
 {% endblock %}

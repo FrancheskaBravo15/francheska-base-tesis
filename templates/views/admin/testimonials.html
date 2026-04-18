@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Testimonios - Admin{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0"><i class="bi bi-chat-quote me-2 text-danger"></i>Gestión de Testimonios</h3>
+    <a href="{{ url_for('admin.panel') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Volver
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead style="background-color:#fce4ec;">
+                    <tr>
+                        <th class="ps-3">Autor</th>
+                        <th>Puntuación</th>
+                        <th>Comentario</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th class="text-center pe-3">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in testimonials %}
+                    <tr>
+                        <td class="ps-3 fw-semibold">{{ t.author_name }}</td>
+                        <td>
+                            {% for i in range(t.rating) %}
+                                <i class="bi bi-star-fill text-warning" style="font-size:.8rem;"></i>
+                            {% endfor %}
+                            {% for i in range(5 - t.rating) %}
+                                <i class="bi bi-star text-muted" style="font-size:.8rem;"></i>
+                            {% endfor %}
+                        </td>
+                        <td class="small text-muted" style="max-width:280px;">
+                            {{ t.comment[:120] }}{% if t.comment|length > 120 %}...{% endif %}
+                        </td>
+                        <td class="small text-muted">{{ t.created_at.strftime('%d/%m/%Y') if t.created_at else '-' }}</td>
+                        <td>
+                            {% if t.is_approved %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">Aprobado</span>
+                            {% else %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Pendiente</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center pe-3">
+                            <div class="btn-group btn-group-sm">
+                                {% if not t.is_approved %}
+                                <form method="POST" action="{{ url_for('admin.approve_testimonial', testimonial_id=t.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="btn btn-outline-success" title="Aprobar">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <form method="POST" action="{{ url_for('admin.delete_testimonial', testimonial_id=t.id) }}"
+                                      class="d-inline"
+                                      onsubmit="return confirm('¿Eliminar este testimonio?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">
+                            <i class="bi bi-chat-quote" style="font-size:2rem;"></i>
+                            <p class="mt-2 mb-0">No hay testimonios aún.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

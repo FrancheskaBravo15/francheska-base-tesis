@@ -11,6 +11,7 @@ from controllers.appointmentController import appointment_bp
 from controllers.cartController import cart_bp
 from controllers.wishlistController import wishlist_bp
 from controllers.reviewController import review_bp
+from controllers.promotionController import promotion_bp
 from dotenv import load_dotenv
 from commands.adminCommands import seed_admin_command
 import os
@@ -35,6 +36,8 @@ def after_request(response):
 # -- Crear carpetas de uploads si no existen --
 os.makedirs(os.path.join(app.static_folder, 'img', 'profiles'), exist_ok=True)
 os.makedirs(os.path.join(app.static_folder, 'img', 'services'), exist_ok=True)
+os.makedirs(os.path.join(app.static_folder, 'img', 'categories'), exist_ok=True)
+os.makedirs(os.path.join(app.static_folder, 'img', 'promotions'), exist_ok=True)
 
 # -- Rutas BluePrint --
 app.register_blueprint(error_bp)
@@ -47,6 +50,7 @@ app.register_blueprint(appointment_bp)
 app.register_blueprint(cart_bp)
 app.register_blueprint(wishlist_bp)
 app.register_blueprint(review_bp)
+app.register_blueprint(promotion_bp)
 
 # -- Comandos CLI --
 app.cli.add_command(seed_admin_command)

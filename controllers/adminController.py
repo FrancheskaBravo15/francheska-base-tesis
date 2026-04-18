@@ -2,6 +2,9 @@ from flask import render_template, request, redirect, url_for, Blueprint, flash
 from utils.authDecorator import role_required
 from services.userService import UserService
 from services.serviceService import ServiceService
+from services.categoryService import CategoryService
+from services.promotionService import PromotionService
+from services.testimonialService import TestimonialService
 from services.workerService import WorkerService
 from services.appointmentService import AppointmentService
 import os
@@ -10,6 +13,9 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 def _upload_folder_services(app):
     return os.path.join(app.static_folder, 'img', 'services')
+
+def _upload_folder_categories(app):
+    return os.path.join(app.static_folder, 'img', 'categories')
 
 # ──────────────────────────────────────────
 # PANEL PRINCIPAL
@@ -53,6 +59,73 @@ def toggle_user(user_id):
 # ──────────────────────────────────────────
 # GESTIÓN DE SERVICIOS
 # ──────────────────────────────────────────
+# ──────────────────────────────────────────
+# GESTIÓN DE CATEGORÍAS
+# ──────────────────────────────────────────
+@admin_bp.route('/categories', methods=['GET'])
+@role_required('admin')
+def categories():
+    result = CategoryService.get_all_categories()
+    return render_template('/views/admin/categories.html', categories=result.get("categories", []))
+
+@admin_bp.route('/categories/new', methods=['GET', 'POST'])
+@role_required('admin')
+def create_category():
+    from flask import current_app
+    if request.method == 'GET':
+        return render_template('/views/admin/category_form.html', category=None)
+
+    upload_folder = _upload_folder_categories(current_app)
+    os.makedirs(upload_folder, exist_ok=True)
+    result = CategoryService.create_category(
+        name=request.form.get('name', '').strip(),
+        description=request.form.get('description', '').strip(),
+        image_file=request.files.get('image'),
+        upload_folder=upload_folder
+    )
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    if result["success"]:
+        return redirect(url_for('admin.categories'))
+    return render_template('/views/admin/category_form.html', category=None, form_data=request.form)
+
+@admin_bp.route('/categories/<category_id>/edit', methods=['GET', 'POST'])
+@role_required('admin')
+def edit_category(category_id):
+    from flask import current_app
+    result = CategoryService.get_category_by_id(category_id)
+    if not result["success"]:
+        flash(result["message"], 'danger')
+        return redirect(url_for('admin.categories'))
+
+    category = result["category"]
+    if request.method == 'GET':
+        return render_template('/views/admin/category_form.html', category=category)
+
+    upload_folder = _upload_folder_categories(current_app)
+    os.makedirs(upload_folder, exist_ok=True)
+    result = CategoryService.update_category(
+        category_id=category_id,
+        name=request.form.get('name', '').strip(),
+        description=request.form.get('description', '').strip(),
+        image_file=request.files.get('image'),
+        upload_folder=upload_folder
+    )
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    if result["success"]:
+        return redirect(url_for('admin.categories'))
+    return render_template('/views/admin/category_form.html', category=category, form_data=request.form)
+
+@admin_bp.route('/categories/<category_id>/delete', methods=['POST'])
+@role_required('admin')
+def delete_category(category_id):
+    result = CategoryService.delete_category(category_id)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('admin.categories'))
+
+
+# ──────────────────────────────────────────
+# GESTIÓN DE SERVICIOS
+# ──────────────────────────────────────────
 @admin_bp.route('/services', methods=['GET'])
 @role_required('admin')
 def services():
@@ -64,7 +137,7 @@ def services():
 def create_service():
     from flask import current_app
     if request.method == 'GET':
-        categories = ServiceService.get_categories()
+        categories = CategoryService.get_all_categories().get("categories", [])
         return render_template('/views/admin/service_form.html', service=None, categories=categories)
 
     image_file    = request.files.get('image')
@@ -81,7 +154,7 @@ def create_service():
     flash(result["message"], 'success' if result["success"] else 'danger')
     if result["success"]:
         return redirect(url_for('admin.services'))
-    categories = ServiceService.get_categories()
+    categories = CategoryService.get_all_categories().get("categories", [])
     return render_template('/views/admin/service_form.html', service=None,
                            categories=categories, form_data=request.form)
 
@@ -96,7 +169,7 @@ def edit_service(service_id):
 
     service = result["service"]
     if request.method == 'GET':
-        categories = ServiceService.get_categories()
+        categories = CategoryService.get_all_categories().get("categories", [])
         return render_template('/views/admin/service_form.html', service=service, categories=categories)
 
     image_file    = request.files.get('image')
@@ -114,7 +187,11 @@ def edit_service(service_id):
         upload_folder    = upload_folder
     )
     flash(result["message"], 'success' if result["success"] else 'danger')
-    return redirect(url_for('admin.services'))
+    if result["success"]:
+        return redirect(url_for('admin.services'))
+    categories = CategoryService.get_all_categories().get("categories", [])
+    return render_template('/views/admin/service_form.html', service=service,
+                           categories=categories, form_data=request.form)
 
 @admin_bp.route('/services/<service_id>/delete', methods=['POST'])
 @role_required('admin')
@@ -136,7 +213,7 @@ def workers():
 @admin_bp.route('/workers/new', methods=['GET', 'POST'])
 @role_required('admin')
 def create_worker():
-    categories = ServiceService.get_categories()
+    categories = CategoryService.get_all_categories().get("categories", [])
     if request.method == 'GET':
         return render_template('/views/admin/worker_form.html', worker=None, categories=categories)
 
@@ -160,7 +237,7 @@ def create_worker():
 @admin_bp.route('/workers/<worker_id>/edit', methods=['GET', 'POST'])
 @role_required('admin')
 def edit_worker(worker_id):
-    categories = ServiceService.get_categories()
+    categories = CategoryService.get_all_categories().get("categories", [])
     result = WorkerService.get_worker_by_id(worker_id)
     if not result["success"]:
         flash(result["message"], 'danger')
@@ -238,3 +315,107 @@ def appointments():
     result = AppointmentService.get_all_appointments()
     return render_template('/views/admin/appointments.html',
                            appointments=result.get("appointments", []))
+
+
+# ──────────────────────────────────────────
+# GESTIÓN DE PROMOCIONES
+# ──────────────────────────────────────────
+def _upload_folder_promotions(app):
+    return os.path.join(app.static_folder, 'img', 'promotions')
+
+@admin_bp.route('/promotions', methods=['GET'])
+@role_required('admin')
+def promotions():
+    result = PromotionService.get_all_promotions()
+    return render_template('/views/admin/promotions.html', promotions=result.get("promotions", []))
+
+@admin_bp.route('/promotions/new', methods=['GET', 'POST'])
+@role_required('admin')
+def create_promotion():
+    from flask import current_app
+    services = ServiceService.get_all_services(only_active=True).get("services", [])
+    if request.method == 'GET':
+        return render_template('/views/admin/promotion_form.html', promotion=None, services=services)
+
+    upload_folder = _upload_folder_promotions(current_app)
+    os.makedirs(upload_folder, exist_ok=True)
+    result = PromotionService.create_promotion(
+        name=request.form.get('name', '').strip(),
+        description=request.form.get('description', '').strip(),
+        service_ids=request.form.getlist('service_ids'),
+        promo_price=request.form.get('promo_price', '0'),
+        image_file=request.files.get('image'),
+        upload_folder=upload_folder
+    )
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    if result["success"]:
+        return redirect(url_for('admin.promotions'))
+    return render_template('/views/admin/promotion_form.html', promotion=None,
+                           services=services, form_data=request.form)
+
+@admin_bp.route('/promotions/<promo_id>/edit', methods=['GET', 'POST'])
+@role_required('admin')
+def edit_promotion(promo_id):
+    from flask import current_app
+    result = PromotionService.get_promotion_by_id(promo_id)
+    if not result["success"]:
+        flash(result["message"], 'danger')
+        return redirect(url_for('admin.promotions'))
+
+    promotion = result["promotion"]
+    services = ServiceService.get_all_services(only_active=True).get("services", [])
+
+    if request.method == 'GET':
+        return render_template('/views/admin/promotion_form.html',
+                               promotion=promotion, services=services)
+
+    upload_folder = _upload_folder_promotions(current_app)
+    os.makedirs(upload_folder, exist_ok=True)
+    is_active = request.form.get('is_active') == 'on'
+    result = PromotionService.update_promotion(
+        promo_id=promo_id,
+        name=request.form.get('name', '').strip(),
+        description=request.form.get('description', '').strip(),
+        service_ids=request.form.getlist('service_ids'),
+        promo_price=request.form.get('promo_price', '0'),
+        is_active=is_active,
+        image_file=request.files.get('image'),
+        upload_folder=upload_folder
+    )
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    if result["success"]:
+        return redirect(url_for('admin.promotions'))
+    return render_template('/views/admin/promotion_form.html', promotion=promotion,
+                           services=services, form_data=request.form)
+
+@admin_bp.route('/promotions/<promo_id>/delete', methods=['POST'])
+@role_required('admin')
+def delete_promotion(promo_id):
+    result = PromotionService.delete_promotion(promo_id)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('admin.promotions'))
+
+
+# ──────────────────────────────────────────
+# GESTIÓN DE TESTIMONIOS
+# ──────────────────────────────────────────
+@admin_bp.route('/testimonials', methods=['GET'])
+@role_required('admin')
+def testimonials():
+    result = TestimonialService.get_all()
+    return render_template('/views/admin/testimonials.html',
+                           testimonials=result.get("testimonials", []))
+
+@admin_bp.route('/testimonials/<testimonial_id>/approve', methods=['POST'])
+@role_required('admin')
+def approve_testimonial(testimonial_id):
+    result = TestimonialService.approve(testimonial_id)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('admin.testimonials'))
+
+@admin_bp.route('/testimonials/<testimonial_id>/delete', methods=['POST'])
+@role_required('admin')
+def delete_testimonial(testimonial_id):
+    result = TestimonialService.delete(testimonial_id)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('admin.testimonials'))

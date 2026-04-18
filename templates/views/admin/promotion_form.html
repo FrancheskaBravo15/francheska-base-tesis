@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+{% block title %}{% if promotion %}Editar{% else %}Nueva{% endif %} Promoción - Admin{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0">
+                <i class="bi bi-tag me-2 text-danger"></i>
+                {% if promotion %}Editar Promoción{% else %}Nueva Promoción{% endif %}
+            </h3>
+            <a href="{{ url_for('admin.promotions') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Volver
+            </a>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nombre del Combo <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="name" required
+                               value="{{ promotion.name if promotion else (form_data.name if form_data else '') }}"
+                               placeholder="Ej: Combo Manicura + Pedicura">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Descripción</label>
+                        <textarea class="form-control" name="description" rows="2"
+                                  placeholder="Describe el combo y sus beneficios...">{{ promotion.description if promotion else (form_data.description if form_data else '') }}</textarea>
+                    </div>
+
+                    <!-- Selección de servicios con buscador -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Servicios del Combo <span class="text-danger">*</span></label>
+                        <div class="form-text mb-2">Busca y agrega al menos 2 servicios al combo:</div>
+                        {% if services %}
+
+                        <!-- Datos JSON para el JS -->
+                        <script id="services-data" type="application/json">
+                        [{% for svc in services %}{"id":"{{ svc.id }}","name":"{{ svc.name|e }}","category":"{{ svc.category|e }}","price":{{ svc.price }},"duration":{{ svc.duration_minutes }}{% if not loop.last %},{% endif %}}{% endfor %}]
+                        </script>
+
+                        <!-- Inputs hidden (enviados con el form) -->
+                        <div id="selected-inputs">
+                            {% if promotion %}
+                                {% for sid in promotion.service_ids %}
+                                <input type="hidden" name="service_ids" value="{{ sid }}">
+                                {% endfor %}
+                            {% elif form_data %}
+                                {% for sid in form_data.getlist('service_ids') %}
+                                <input type="hidden" name="service_ids" value="{{ sid }}">
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <!-- Servicios seleccionados (badges) -->
+                        <div id="selected-badges" class="d-flex flex-wrap gap-2 mb-2 p-2 border rounded bg-light min-height-badges">
+                            <span id="no-selection-msg" class="text-muted small fst-italic" style="display:none;">
+                                Sin servicios seleccionados
+                            </span>
+                        </div>
+
+                        <!-- Buscador -->
+                        <div class="input-group mb-1">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" id="svc-search" class="form-control"
+                                   placeholder="Buscar por nombre o categoría...">
+                        </div>
+                        <div class="form-text mb-1">Haz clic en un servicio para agregarlo al combo.</div>
+
+                        <!-- Lista filtrable -->
+                        <div id="svc-list" class="border rounded overflow-auto" style="max-height:220px;">
+                            <!-- Renderizado por JS -->
+                        </div>
+
+                        {% else %}
+                        <div class="alert alert-warning py-2 small">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            No hay servicios disponibles. <a href="{{ url_for('admin.create_service') }}">Crea servicios primero</a>.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Precio Promocional ($) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" name="promo_price" required
+                                   min="0.01" step="0.01"
+                                   value="{{ promotion.promo_price if promotion else (form_data.promo_price if form_data else '') }}"
+                                   placeholder="0.00">
+                            <div class="form-text">Debe ser menor al precio total de los servicios.</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Imagen del Combo</label>
+                        {% if promotion and promotion.image_url %}
+                            <div class="mb-2">
+                                <img src="{{ promotion.image_url }}" class="rounded" style="height:80px;object-fit:cover;">
+                                <small class="text-muted d-block mt-1">Sube una nueva para reemplazarla.</small>
+                            </div>
+                        {% endif %}
+                        <input type="file" class="form-control" name="image" accept=".jpg,.jpeg,.png,.webp">
+                        <div class="form-text">Formatos: JPG, PNG, WEBP.</div>
+                    </div>
+
+                    {% if promotion %}
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="is_active"
+                                   {% if promotion.is_active %}checked{% endif %}>
+                            <label class="form-check-label fw-semibold" for="is_active">Promoción Activa</label>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-danger px-4">
+                            <i class="bi bi-save me-2"></i>
+                            {% if promotion %}Guardar Cambios{% else %}Crear Promoción{% endif %}
+                        </button>
+                        <a href="{{ url_for('admin.promotions') }}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if services %}
+<script>
+(function () {
+    const raw = document.getElementById('services-data');
+    if (!raw) return;
+    const ALL = JSON.parse(raw.textContent);
+
+    const inputsWrap  = document.getElementById('selected-inputs');
+    const badgesWrap  = document.getElementById('selected-badges');
+    const noSelMsg    = document.getElementById('no-selection-msg');
+    const listWrap    = document.getElementById('svc-list');
+    const searchInput = document.getElementById('svc-search');
+
+    const selected = new Set(
+        Array.from(inputsWrap.querySelectorAll('input[type=hidden]')).map(i => i.value)
+    );
+
+    function syncInputs() {
+        inputsWrap.innerHTML = '';
+        selected.forEach(id => {
+            const inp = document.createElement('input');
+            inp.type  = 'hidden';
+            inp.name  = 'service_ids';
+            inp.value = id;
+            inputsWrap.appendChild(inp);
+        });
+    }
+
+    function renderBadges() {
+        badgesWrap.innerHTML = '';
+        if (selected.size === 0) {
+            noSelMsg.style.display = '';
+            badgesWrap.appendChild(noSelMsg);
+            return;
+        }
+        noSelMsg.style.display = 'none';
+        selected.forEach(id => {
+            const svc = ALL.find(s => s.id === id);
+            if (!svc) return;
+            const badge = document.createElement('span');
+            badge.className = 'badge d-inline-flex align-items-center gap-1 px-2 py-1';
+            badge.style.cssText = 'background-color:#c2185b;font-size:.85rem;';
+            badge.innerHTML = `${svc.name} <button type="button" class="btn-close btn-close-white ms-1" style="font-size:.5rem;" aria-label="Quitar"></button>`;
+            badge.querySelector('button').addEventListener('click', () => {
+                selected.delete(id);
+                syncInputs();
+                renderBadges();
+                renderList(searchInput.value);
+            });
+            badgesWrap.appendChild(badge);
+        });
+    }
+
+    function renderList(query) {
+        const q = (query || '').toLowerCase().trim();
+        const filtered = ALL.filter(s =>
+            !selected.has(s.id) &&
+            (s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q))
+        );
+        listWrap.innerHTML = '';
+        if (filtered.length === 0) {
+            listWrap.innerHTML = '<p class="text-muted small text-center p-3 mb-0">Sin resultados.</p>';
+            return;
+        }
+        filtered.forEach(svc => {
+            const row = document.createElement('div');
+            row.className = 'px-3 py-2 border-bottom d-flex justify-content-between align-items-center';
+            row.style.cursor = 'pointer';
+            row.innerHTML = `
+                <div>
+                    <div class="fw-semibold small">${svc.name}</div>
+                    <div class="text-muted small">
+                        <span class="badge bg-danger-subtle text-danger">${svc.category}</span>
+                        $${svc.price.toFixed(2)} &middot; ${svc.duration} min
+                    </div>
+                </div>
+                <i class="bi bi-plus-circle text-danger fs-5 flex-shrink-0 ms-2"></i>`;
+            row.addEventListener('click', () => {
+                selected.add(svc.id);
+                syncInputs();
+                renderBadges();
+                renderList(searchInput.value);
+            });
+            row.addEventListener('mouseenter', () => row.style.background = '#fce4ec');
+            row.addEventListener('mouseleave', () => row.style.background = '');
+            listWrap.appendChild(row);
+        });
+    }
+
+    searchInput.addEventListener('input', e => renderList(e.target.value));
+
+    syncInputs();
+    renderBadges();
+    renderList('');
+})();
+</script>
+{% endif %}
+{% endblock %}

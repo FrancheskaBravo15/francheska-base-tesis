@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}{{ promotion.name }} - Shirley Buenaño{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <a href="{{ url_for('promotions.list_promotions') }}" class="btn btn-outline-secondary btn-sm mb-4">
+            <i class="bi bi-arrow-left me-1"></i>Volver a Promociones
+        </a>
+
+        <div class="card border-0 shadow-sm overflow-hidden">
+            {% if promotion.image_url %}
+                <img src="{{ promotion.image_url }}" class="card-img-top" alt="{{ promotion.name }}"
+                     style="height:280px;object-fit:cover;">
+            {% else %}
+                <div class="d-flex align-items-center justify-content-center"
+                     style="height:200px;background:linear-gradient(135deg,#fce4ec,#f8bbd0);">
+                    <i class="bi bi-gift" style="font-size:4rem;color:#c2185b;"></i>
+                </div>
+            {% endif %}
+
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+                    <h3 class="fw-bold mb-0">{{ promotion.name }}</h3>
+                    {% if promotion.original_price and promotion.original_price > promotion.promo_price %}
+                    <span class="badge fs-6 px-3 py-2" style="background-color:#c2185b;">
+                        {{ "%.0f"|format(((promotion.original_price - promotion.promo_price) / promotion.original_price) * 100) }}% de descuento
+                    </span>
+                    {% endif %}
+                </div>
+
+                {% if promotion.description %}
+                <p class="text-muted mb-4">{{ promotion.description }}</p>
+                {% endif %}
+
+                <!-- Servicios incluidos -->
+                <h5 class="fw-bold mb-3"><i class="bi bi-check2-all text-danger me-2"></i>Servicios incluidos</h5>
+                <div class="row g-3 mb-4">
+                    {% for svc in promotion.services %}
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center gap-3 p-3 rounded-3 bg-light">
+                            {% if svc.image_url %}
+                                <img src="{{ svc.image_url }}" class="rounded" width="50" height="50"
+                                     style="object-fit:cover;" alt="{{ svc.name }}">
+                            {% else %}
+                                <div class="rounded d-flex align-items-center justify-content-center"
+                                     style="width:50px;height:50px;background:#fce4ec;">
+                                    <i class="bi bi-scissors text-danger"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <div class="fw-semibold small">{{ svc.name }}</div>
+                                <div class="text-muted small">
+                                    <i class="bi bi-clock me-1"></i>{{ svc.duration_minutes }} min &nbsp;
+                                    <span class="text-decoration-line-through">${{ "%.2f"|format(svc.price) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Precio y acción -->
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 pt-3 border-top">
+                    <div>
+                        {% if promotion.original_price and promotion.original_price > promotion.promo_price %}
+                        <div class="text-muted small text-decoration-line-through">
+                            Precio normal: ${{ "%.2f"|format(promotion.original_price) }}
+                        </div>
+                        <div class="text-muted small text-success fw-semibold">
+                            Ahorras: ${{ "%.2f"|format(promotion.original_price - promotion.promo_price) }}
+                        </div>
+                        {% endif %}
+                        <div class="fw-bold" style="font-size:1.8rem;color:#c2185b;">
+                            ${{ "%.2f"|format(promotion.promo_price) }}
+                        </div>
+                    </div>
+                    <a href="{{ url_for('services.catalog') }}" class="btn btn-danger btn-lg px-4">
+                        <i class="bi bi-calendar-plus me-2"></i>Reservar Ahora
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

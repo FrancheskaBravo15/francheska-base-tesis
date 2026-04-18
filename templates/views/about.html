@@ -1,16 +1,15 @@
-{% extends 'base.html' %} {% block body %}
+{% extends 'base.html' %}
+{% block title %}Nosotros - Shirley Buenaño{% endblock %}
 
-<!-- Header -->
+{% block body %}
 
 <!-- Sección principal -->
 <section class="py-5 bg-light">
     <div class="container">
         <div class="row align-items-center">
-            <!-- Imagen representativa -->
             <div class="col-lg-6 mb-4 mb-lg-0">
                 <img src="{{ url_for('static', filename='/somos.jpg') }}" class="img-fluid w-75 rounded shadow" alt="Centro de Estética Shirley Buenaño">
             </div>
-            <!-- Texto descriptivo -->
             <div class="col-lg-6">
                 <h2 class="fw-bold text-primary mb-3">¿Quiénes Somos?</h2>
                 <p class="text-muted">
@@ -26,7 +25,7 @@
     </div>
 </section>
 
-<!-- Valores o características -->
+<!-- Valores -->
 <section class="py-5">
     <div class="container">
         <div class="row text-center">
@@ -49,5 +48,100 @@
     </div>
 </section>
 
+<!-- Formulario de testimonio -->
+<section class="py-5 bg-light" id="testimonial-form">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="text-center mb-4">
+                    <h4 class="fw-bold"><i class="bi bi-chat-quote text-danger me-2"></i>¿Cómo fue tu experiencia?</h4>
+                    <p class="text-muted small">Tu opinión nos ayuda a seguir mejorando. Aparecerá en la página de inicio una vez revisada.</p>
+                </div>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <form method="POST" action="{{ url_for('index.submit_testimonial') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Tu nombre <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="author_name" required
+                                       placeholder="Ej: María González">
+                            </div>
+
+                            <!-- Selección de estrellas: izquierda=1, derecha=5 -->
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold d-block">Puntuación <span class="text-danger">*</span></label>
+                                <div class="d-flex gap-1 align-items-center" id="star-container">
+                                    {% for i in range(1, 6) %}
+                                    <input type="radio" class="visually-hidden star-input"
+                                           name="rating" id="star{{ i }}" value="{{ i }}"
+                                           {% if i == 5 %}checked{% endif %}>
+                                    <label for="star{{ i }}" class="star-label mb-0"
+                                           data-val="{{ i }}"
+                                           style="font-size:2rem;cursor:pointer;color:#ccc;line-height:1;transition:color .1s;">
+                                        <i class="bi bi-star-fill"></i>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                                <div class="form-text mt-1" id="star-hint">Seleccionado: 5 estrellas</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Tu comentario <span class="text-danger">*</span></label>
+                                <textarea class="form-control" name="comment" rows="4" required
+                                          minlength="10"
+                                          placeholder="Cuéntanos sobre tu experiencia en nuestro centro de estética..."></textarea>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-send me-2"></i>Enviar Opinión
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const labels = Array.from(document.querySelectorAll('.star-label'));
+    const inputs = Array.from(document.querySelectorAll('.star-input'));
+    const hint   = document.getElementById('star-hint');
+
+    /* labels[0] = estrella 1 (izquierda), labels[4] = estrella 5 (derecha) */
+    function highlight(upTo) {
+        labels.forEach(lbl => {
+            const val = parseInt(lbl.dataset.val);
+            lbl.style.color = val <= upTo ? '#ffc107' : '#ccc';
+        });
+        if (hint) hint.textContent = 'Seleccionado: ' + upTo + (upTo === 1 ? ' estrella' : ' estrellas');
+    }
+
+    function getChecked() {
+        const checked = inputs.find(i => i.checked);
+        return checked ? parseInt(checked.value) : 5;
+    }
+
+    /* Estado inicial */
+    highlight(getChecked());
+
+    labels.forEach(lbl => {
+        const val = parseInt(lbl.dataset.val);
+        lbl.addEventListener('mouseenter', () => highlight(val));
+        lbl.addEventListener('mouseleave', () => highlight(getChecked()));
+        lbl.addEventListener('click',      () => highlight(val));
+    });
+
+    inputs.forEach(inp => {
+        inp.addEventListener('change', () => highlight(parseInt(inp.value)));
+    });
+})();
+</script>
 {% endblock %}

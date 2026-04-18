@@ -34,24 +34,23 @@
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Categoría <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="category" required
-                                   list="categorias-list"
-                                   placeholder="Ej: Manicura, Pedicura, Cabello..."
-                                   value="{{ service.category if service else (form_data.category if form_data else '') }}">
-                            <datalist id="categorias-list">
-                                {% for cat in categories %}
-                                    <option value="{{ cat }}">
-                                {% endfor %}
-                                <option value="Manicura">
-                                <option value="Pedicura">
-                                <option value="Cabello">
-                                <option value="Maquillaje">
-                                <option value="Facial">
-                                <option value="Depilación">
-                                <option value="Masajes">
-                                <option value="Uñas Acrílicas">
-                                <option value="Cejas y Pestañas">
-                            </datalist>
+                            {% if categories %}
+                                <select class="form-select" name="category" required>
+                                    <option value="">-- Selecciona una categoría --</option>
+                                    {% for cat in categories %}
+                                        <option value="{{ cat.name }}"
+                                            {% if (service and service.category == cat.name) or (form_data and form_data.category == cat.name) %}selected{% endif %}>
+                                            {{ cat.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            {% else %}
+                                <div class="alert alert-warning py-2 mb-0 small">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                                    No hay categorías. <a href="{{ url_for('admin.create_category') }}">Crea una primero</a>.
+                                </div>
+                                <input type="hidden" name="category" value="">
+                            {% endif %}
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Precio ($) <span class="text-danger">*</span></label>
@@ -62,7 +61,7 @@
                         <div class="col-md-3">
                             <label class="form-label fw-semibold">Duración (min) <span class="text-danger">*</span></label>
                             <input type="number" class="form-control" name="duration_minutes" required
-                                   min="1" step="5"
+                                   min="5" step="1"
                                    value="{{ service.duration_minutes if service else (form_data.duration_minutes if form_data else '60') }}">
                         </div>
                     </div>
