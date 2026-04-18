@@ -9,12 +9,22 @@
     </a>
 </div>
 
-<!-- Filtro por estado -->
-<div class="mb-4 d-flex gap-2 flex-wrap">
-    <button class="btn btn-sm btn-danger filter-btn active" data-filter="all">Todas</button>
-    <button class="btn btn-sm btn-outline-success filter-btn" data-filter="confirmada">Confirmadas</button>
-    <button class="btn btn-sm btn-outline-secondary filter-btn" data-filter="completada">Completadas</button>
-    <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="cancelada">Canceladas</button>
+<!-- Filtros y ordenamiento -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm btn-danger filter-btn active" data-filter="all">Todas</button>
+        <button class="btn btn-sm btn-outline-success filter-btn" data-filter="confirmada">Confirmadas</button>
+        <button class="btn btn-sm btn-outline-secondary filter-btn" data-filter="completada">Completadas</button>
+        <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="cancelada">Canceladas</button>
+    </div>
+    <div class="btn-group btn-group-sm" role="group">
+        <button class="btn btn-danger sort-btn active" data-sort="order">
+            <i class="bi bi-receipt me-1"></i>Fecha de pedido
+        </button>
+        <button class="btn btn-outline-danger sort-btn" data-sort="appt">
+            <i class="bi bi-calendar-event me-1"></i>Fecha de cita
+        </button>
+    </div>
 </div>
 
 <div class="card border-0 shadow-sm">
@@ -32,10 +42,12 @@
                         <th class="pe-3">Tipo</th>
                     </tr>
                 </thead>
-                <tbody>
-
                     {% for row in rows %}
                     {% if row.row_type == 'combo' %}
+                <tbody class="sortable-group"
+                       data-sort-order="{{ row.sort_order_str }}"
+                       data-sort-appt="{{ row.sort_appt_str }}"
+                       data-status="{{ row.status }}">
                     {# ── Fila principal del combo (clicable) ── #}
                     <tr data-status="{{ row.status }}"
                         class="combo-header"
@@ -113,8 +125,13 @@
                             </table>
                         </td>
                     </tr>
+                </tbody>
 
                     {% else %}
+                <tbody class="sortable-group"
+                       data-sort-order="{{ row.sort_order_str }}"
+                       data-sort-appt="{{ row.sort_appt_str }}"
+                       data-status="{{ row.status }}">
                     {# ── Cita individual ── #}
                     <tr data-status="{{ row.status }}">
                         <td class="ps-3">
@@ -140,19 +157,20 @@
                             <span class="badge bg-light text-muted border">Individual</span>
                         </td>
                     </tr>
+                </tbody>
                     {% endif %}
                     {% endfor %}
 
                     {% if not rows %}
+                <tbody>
                     <tr>
                         <td colspan="7" class="text-center text-muted py-5">
                             <i class="bi bi-calendar-x" style="font-size:2rem;"></i>
                             <p class="mt-2 mb-0">No hay citas registradas</p>
                         </td>
                     </tr>
-                    {% endif %}
-
                 </tbody>
+                    {% endif %}
             </table>
         </div>
     </div>
@@ -175,6 +193,30 @@ function toggleDetail(id, headerRow) {
     }
 }
 
+const table = document.getElementById('appointmentsTable');
+
+function sortTable(attr) {
+    const groups = Array.from(table.querySelectorAll('tbody.sortable-group'));
+    groups.sort((a, b) => {
+        const va = a.dataset[attr] || '';
+        const vb = b.dataset[attr] || '';
+        return vb < va ? -1 : vb > va ? 1 : 0;
+    });
+    groups.forEach(g => table.appendChild(g));
+}
+
+document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.sort-btn').forEach(b => {
+            b.classList.remove('btn-danger', 'active');
+            b.classList.add('btn-outline-danger');
+        });
+        btn.classList.remove('btn-outline-danger');
+        btn.classList.add('btn-danger', 'active');
+        sortTable(btn.dataset.sort === 'appt' ? 'sortAppt' : 'sortOrder');
+    });
+});
+
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.filter-btn').forEach(b => {
@@ -186,19 +228,15 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.add('active');
 
         const filter = btn.dataset.filter;
-
-        document.querySelectorAll('#appointmentsTable tbody tr[data-status]').forEach(row => {
-            if (row.id && row.id.startsWith('detail-')) return;
-            row.style.display = (filter === 'all' || row.dataset.status === filter) ? '' : 'none';
-        });
-
-        // Colapsar filas de detalle al filtrar
-        document.querySelectorAll('[id^="detail-"]').forEach(row => {
-            row.style.display = 'none';
-        });
-        document.querySelectorAll('.toggle-icon').forEach(icon => {
-            icon.classList.remove('bi-chevron-up');
-            icon.classList.add('bi-chevron-down');
+        table.querySelectorAll('tbody.sortable-group').forEach(group => {
+            const show = filter === 'all' || group.dataset.status === filter;
+            group.style.display = show ? '' : 'none';
+            if (show) {
+                // colapsar detalle al filtrar
+                const detailRow = group.querySelector('tr[id^="detail-"]');
+                if (detailRow) detailRow.style.display = 'none';
+                group.querySelector('.toggle-icon')?.classList.replace('bi-chevron-up', 'bi-chevron-down');
+            }
         });
     });
 });

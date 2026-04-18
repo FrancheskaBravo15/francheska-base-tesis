@@ -20,18 +20,28 @@
 </div>
 {% endif %}
 
-<!-- Filtros -->
-<div class="d-flex gap-2 mb-4 flex-wrap">
-    <button class="btn btn-sm btn-danger filter-btn active" data-filter="all">Todas</button>
-    <button class="btn btn-sm btn-outline-success filter-btn" data-filter="confirmada">Confirmadas</button>
-    <button class="btn btn-sm btn-outline-warning filter-btn" data-filter="pendiente_reagenda">
-        Reagendamiento
-        {% if pending_reschedules and pending_reschedules > 0 %}
-            <span class="badge bg-warning text-dark ms-1">{{ pending_reschedules }}</span>
-        {% endif %}
-    </button>
-    <button class="btn btn-sm btn-outline-secondary filter-btn" data-filter="completada">Completadas</button>
-    <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="cancelada">Canceladas</button>
+<!-- Filtros y ordenamiento -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm btn-danger filter-btn active" data-filter="all">Todas</button>
+        <button class="btn btn-sm btn-outline-success filter-btn" data-filter="confirmada">Confirmadas</button>
+        <button class="btn btn-sm btn-outline-warning filter-btn" data-filter="pendiente_reagenda">
+            Reagendamiento
+            {% if pending_reschedules and pending_reschedules > 0 %}
+                <span class="badge bg-warning text-dark ms-1">{{ pending_reschedules }}</span>
+            {% endif %}
+        </button>
+        <button class="btn btn-sm btn-outline-secondary filter-btn" data-filter="completada">Completadas</button>
+        <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="cancelada">Canceladas</button>
+    </div>
+    <div class="btn-group btn-group-sm" role="group" aria-label="Ordenar por">
+        <button class="btn btn-danger sort-btn active" data-sort="order">
+            <i class="bi bi-receipt me-1"></i>Fecha de pedido
+        </button>
+        <button class="btn btn-outline-danger sort-btn" data-sort="appt">
+            <i class="bi bi-calendar-event me-1"></i>Fecha de cita
+        </button>
+    </div>
 </div>
 
 {% if rows %}
@@ -40,7 +50,10 @@
     {% for row in rows %}
     {% if row.row_type == 'combo' %}
     <!-- ── COMBO ── -->
-    <div class="col-12 appt-card" data-status="{{ row.status }}">
+    <div class="col-12 appt-card"
+         data-status="{{ row.status }}"
+         data-sort-order="{{ row.sort_order_str }}"
+         data-sort-appt="{{ row.sort_appt_str }}">
         <div class="card border-0 shadow-sm" style="border-left:4px solid #c2185b !important;">
             <div class="card-header py-2 px-3"
                  style="background:#fce4ec;border-bottom:1px solid #f8bbd0;">
@@ -125,7 +138,10 @@
 
     {% else %}
     <!-- ── CITA INDIVIDUAL ── -->
-    <div class="col-md-6 appt-card" data-status="{{ row.status }}">
+    <div class="col-md-6 appt-card"
+         data-status="{{ row.status }}"
+         data-sort-order="{{ row.sort_order_str }}"
+         data-sort-appt="{{ row.sort_appt_str }}">
         <div class="card border-0 shadow-sm h-100 {% if row.status == 'pendiente_reagenda' %}border-warning border{% endif %}">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-2">
@@ -213,6 +229,31 @@
 
 {% block extra_js %}
 <script>
+const container = document.getElementById('appointmentsList');
+
+function sortCards(attr) {
+    if (!container) return;
+    const cards = Array.from(container.children);
+    cards.sort((a, b) => {
+        const va = a.dataset[attr] || '';
+        const vb = b.dataset[attr] || '';
+        return vb < va ? -1 : vb > va ? 1 : 0;
+    });
+    cards.forEach(c => container.appendChild(c));
+}
+
+document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.sort-btn').forEach(b => {
+            b.classList.remove('btn-danger', 'active');
+            b.classList.add('btn-outline-danger');
+        });
+        btn.classList.remove('btn-outline-danger');
+        btn.classList.add('btn-danger', 'active');
+        sortCards(btn.dataset.sort === 'appt' ? 'sortAppt' : 'sortOrder');
+    });
+});
+
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.filter-btn').forEach(b =>

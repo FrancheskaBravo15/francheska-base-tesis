@@ -338,12 +338,20 @@ def appointments():
             appt["row_type"] = "standalone"
             standalone.append(appt)
 
+    def _dt_str(dt):
+        if dt is None: return "0000-00-00 00:00:00"
+        return dt.strftime("%Y-%m-%d %H:%M:%S") if hasattr(dt, 'strftime') else str(dt)
+
     rows = []
     for g in promo_groups.values():
-        g["sort_key"] = max(e["created_at"] for e in g["entries"])
+        g["sort_key"]       = max(e["created_at"] for e in g["entries"] if e["created_at"])
+        g["sort_order_str"] = _dt_str(g["sort_key"])
+        g["sort_appt_str"]  = min(f"{e['date']} {e['start_time']}" for e in g["entries"])
         rows.append(g)
     for a in standalone:
-        a["sort_key"] = a["created_at"]
+        a["sort_key"]       = a["created_at"]
+        a["sort_order_str"] = _dt_str(a["created_at"])
+        a["sort_appt_str"]  = f"{a['date']} {a['start_time']}"
         rows.append(a)
     rows.sort(key=lambda x: x["sort_key"], reverse=True)
 
