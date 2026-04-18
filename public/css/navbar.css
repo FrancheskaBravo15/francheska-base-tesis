@@ -73,7 +73,7 @@
 }
 
 
-/* TARJETAS DE CATEGORÍA */
+/* TARJETAS DE CATEGORÍA (legacy) */
 
 .category-card {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -83,3 +83,57 @@
     transform: translateY(-4px);
     box-shadow: 0 8px 20px rgba(233, 30, 99, 0.2) !important;
 }
+
+
+/* TARJETAS MAGAZINE DE CATEGORÍA (carousel index) */
+
+.cat-card {
+    cursor: pointer;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.cat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 28px rgba(194, 24, 91, 0.35) !important;
+}
+
+.cat-card-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.cat-card:hover .cat-card-img {
+    transform: scale(1.07);
+}
+
+.cat-card:hover .cat-card-hover {
+    background: rgba(194, 24, 91, 0.18) !important;
+}
+
+
+/* CONTROLES PERSONALIZADOS CAROUSEL CATEGORÍAS */
+
+.cat-carousel-btn {
+    width: 36px;
+    height: 36px;
+    background: white !important;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 1 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cat-carousel-btn:hover {
+    background: #fce4ec !important;
+}
+
+.cat-carousel-btn.carousel-control-prev { left: -18px; }
+.cat-carousel-btn.carousel-control-next { right: -18px; }
