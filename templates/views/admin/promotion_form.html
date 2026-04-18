@@ -39,9 +39,7 @@
                         {% if services %}
 
                         <!-- Datos JSON para el JS -->
-                        <script id="services-data" type="application/json">
-                        [{% for svc in services %}{"id":"{{ svc.id }}","name":"{{ svc.name|e }}","category":"{{ svc.category|e }}","price":{{ svc.price }},"duration":{{ svc.duration_minutes }}{% if not loop.last %},{% endif %}}{% endfor %}]
-                        </script>
+                        <script id="services-data" type="application/json">{{ services_json | safe }}</script>
 
                         <!-- Inputs hidden (enviados con el form) -->
                         <div id="selected-inputs">
@@ -187,15 +185,23 @@
 
     function renderList(query) {
         const q = (query || '').toLowerCase().trim();
+        listWrap.innerHTML = '';
+
+        if (!q) {
+            listWrap.innerHTML = '<p class="text-muted small text-center p-3 mb-0"><i class="bi bi-search me-1"></i>Escribe para buscar un servicio...</p>';
+            return;
+        }
+
         const filtered = ALL.filter(s =>
             !selected.has(s.id) &&
             (s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q))
         );
-        listWrap.innerHTML = '';
+
         if (filtered.length === 0) {
-            listWrap.innerHTML = '<p class="text-muted small text-center p-3 mb-0">Sin resultados.</p>';
+            listWrap.innerHTML = '<p class="text-muted small text-center p-3 mb-0">Sin resultados para "' + q + '".</p>';
             return;
         }
+
         filtered.forEach(svc => {
             const row = document.createElement('div');
             row.className = 'px-3 py-2 border-bottom d-flex justify-content-between align-items-center';

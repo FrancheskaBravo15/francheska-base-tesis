@@ -332,10 +332,17 @@ def promotions():
 @admin_bp.route('/promotions/new', methods=['GET', 'POST'])
 @role_required('admin')
 def create_promotion():
+    import json
     from flask import current_app
     services = ServiceService.get_all_services(only_active=True).get("services", [])
     if request.method == 'GET':
-        return render_template('/views/admin/promotion_form.html', promotion=None, services=services)
+        services_json = json.dumps([
+            {"id": s["id"], "name": s["name"], "category": s["category"],
+             "price": s["price"], "duration": s["duration_minutes"]}
+            for s in services
+        ])
+        return render_template('/views/admin/promotion_form.html',
+                               promotion=None, services=services, services_json=services_json)
 
     upload_folder = _upload_folder_promotions(current_app)
     os.makedirs(upload_folder, exist_ok=True)
@@ -350,12 +357,19 @@ def create_promotion():
     flash(result["message"], 'success' if result["success"] else 'danger')
     if result["success"]:
         return redirect(url_for('admin.promotions'))
+    services_json = json.dumps([
+        {"id": s["id"], "name": s["name"], "category": s["category"],
+         "price": s["price"], "duration": s["duration_minutes"]}
+        for s in services
+    ])
     return render_template('/views/admin/promotion_form.html', promotion=None,
-                           services=services, form_data=request.form)
+                           services=services, services_json=services_json,
+                           form_data=request.form)
 
 @admin_bp.route('/promotions/<promo_id>/edit', methods=['GET', 'POST'])
 @role_required('admin')
 def edit_promotion(promo_id):
+    import json
     from flask import current_app
     result = PromotionService.get_promotion_by_id(promo_id)
     if not result["success"]:
@@ -364,10 +378,16 @@ def edit_promotion(promo_id):
 
     promotion = result["promotion"]
     services = ServiceService.get_all_services(only_active=True).get("services", [])
+    services_json = json.dumps([
+        {"id": s["id"], "name": s["name"], "category": s["category"],
+         "price": s["price"], "duration": s["duration_minutes"]}
+        for s in services
+    ])
 
     if request.method == 'GET':
         return render_template('/views/admin/promotion_form.html',
-                               promotion=promotion, services=services)
+                               promotion=promotion, services=services,
+                               services_json=services_json)
 
     upload_folder = _upload_folder_promotions(current_app)
     os.makedirs(upload_folder, exist_ok=True)
@@ -386,7 +406,8 @@ def edit_promotion(promo_id):
     if result["success"]:
         return redirect(url_for('admin.promotions'))
     return render_template('/views/admin/promotion_form.html', promotion=promotion,
-                           services=services, form_data=request.form)
+                           services=services, services_json=services_json,
+                           form_data=request.form)
 
 @admin_bp.route('/promotions/<promo_id>/delete', methods=['POST'])
 @role_required('admin')
