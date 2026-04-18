@@ -13,7 +13,6 @@ def my_appointments():
 
     appointments = result.get("appointments", [])
 
-    # Separar citas individuales de combos (agrupadas por combo_instance_id)
     promo_groups = {}
     standalone   = []
     for appt in appointments:
@@ -21,6 +20,7 @@ def my_appointments():
         if cid:
             if cid not in promo_groups:
                 promo_groups[cid] = {
+                    "row_type":          "combo",
                     "combo_instance_id": cid,
                     "promotion_id":      appt.get("promotion_id"),
                     "promotion_name":    appt.get("promotion_name", "Promoción"),
@@ -33,11 +33,20 @@ def my_appointments():
                 promo_groups[cid]["group_total"] + appt["total_price"], 2
             )
         else:
+            appt["row_type"] = "standalone"
             standalone.append(appt)
 
+    rows = []
+    for g in promo_groups.values():
+        g["sort_key"] = max(e["created_at"] for e in g["entries"])
+        rows.append(g)
+    for a in standalone:
+        a["sort_key"] = a["created_at"]
+        rows.append(a)
+    rows.sort(key=lambda x: x["sort_key"], reverse=True)
+
     return render_template('/views/appointments/list.html',
-                           standalone=standalone,
-                           promo_groups=list(promo_groups.values()),
+                           rows=rows,
                            pending_reschedules=pending_reschedules)
 
 @appointment_bp.route('/cancel-group/<combo_instance_id>', methods=['POST'])

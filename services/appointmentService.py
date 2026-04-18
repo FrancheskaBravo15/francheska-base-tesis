@@ -239,7 +239,8 @@ class AppointmentService:
                     "reschedule_reason":   a.reschedule_reason,
                     "promotion_id":        a.promotion_id,
                     "promotion_name":      a.promotion_name,
-                    "combo_instance_id":   a.combo_instance_id
+                    "combo_instance_id":   a.combo_instance_id,
+                    "created_at":          a.created_at
                 })
             return {"success": True, "appointments": result}
         except Exception as e:
@@ -271,7 +272,8 @@ class AppointmentService:
                     "status":         a.status,
                     "promotion_id":      a.promotion_id,
                     "promotion_name":    a.promotion_name,
-                    "combo_instance_id": a.combo_instance_id
+                    "combo_instance_id": a.combo_instance_id,
+                    "created_at":        a.created_at
                 })
             return {"success": True, "appointments": result}
         except Exception as e:

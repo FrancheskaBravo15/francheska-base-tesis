@@ -321,6 +321,7 @@ def appointments():
         if cid:
             if cid not in promo_groups:
                 promo_groups[cid] = {
+                    "row_type":          "combo",
                     "combo_instance_id": cid,
                     "promotion_id":      appt.get("promotion_id"),
                     "promotion_name":    appt.get("promotion_name", "Promoción"),
@@ -334,11 +335,19 @@ def appointments():
                 promo_groups[cid]["group_total"] + appt["total_price"], 2
             )
         else:
+            appt["row_type"] = "standalone"
             standalone.append(appt)
 
-    return render_template('/views/admin/appointments.html',
-                           promo_groups=list(promo_groups.values()),
-                           standalone=standalone)
+    rows = []
+    for g in promo_groups.values():
+        g["sort_key"] = max(e["created_at"] for e in g["entries"])
+        rows.append(g)
+    for a in standalone:
+        a["sort_key"] = a["created_at"]
+        rows.append(a)
+    rows.sort(key=lambda x: x["sort_key"], reverse=True)
+
+    return render_template('/views/admin/appointments.html', rows=rows)
 
 
 # ──────────────────────────────────────────

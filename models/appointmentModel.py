@@ -18,7 +18,7 @@ class AppointmentModel:
                  proposed_date=None, proposed_start_time=None,
                  proposed_end_time=None, reschedule_reason=None,
                  promotion_id=None, promotion_name=None,
-                 combo_instance_id=None):
+                 combo_instance_id=None, created_at=None):
         self.id = id
         self.client_id  = client_id
         self.worker_id  = worker_id
@@ -38,7 +38,7 @@ class AppointmentModel:
         self.promotion_id       = promotion_id
         self.promotion_name     = promotion_name
         self.combo_instance_id  = combo_instance_id  # UUID único por cada compra del combo
-        self.created_at = datetime.now()
+        self.created_at = created_at if created_at is not None else datetime.now()
 
     @classmethod
     def from_dict(cls, data: dict) -> 'AppointmentModel':
@@ -58,7 +58,8 @@ class AppointmentModel:
             reschedule_reason  = data.get("reschedule_reason"),
             promotion_id       = data.get("promotion_id"),
             promotion_name     = data.get("promotion_name"),
-            combo_instance_id  = data.get("combo_instance_id")
+            combo_instance_id  = data.get("combo_instance_id"),
+            created_at         = data.get("created_at")
         )
         if "_id" in data:
             appt.id = str(data["_id"])
