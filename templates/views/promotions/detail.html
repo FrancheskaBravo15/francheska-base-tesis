@@ -68,7 +68,7 @@
                         <div class="text-muted small text-decoration-line-through">
                             Precio normal: ${{ "%.2f"|format(promotion.original_price) }}
                         </div>
-                        <div class="text-muted small text-success fw-semibold">
+                        <div class="small text-success fw-semibold">
                             Ahorras: ${{ "%.2f"|format(promotion.original_price - promotion.promo_price) }}
                         </div>
                         {% endif %}
@@ -76,13 +76,415 @@
                             ${{ "%.2f"|format(promotion.promo_price) }}
                         </div>
                     </div>
-                    <a href="{{ url_for('services.catalog') }}" class="btn btn-danger btn-lg px-4">
+                    {% if current_user %}
+                    <button class="btn btn-danger btn-lg px-4" data-bs-toggle="modal" data-bs-target="#bookPromoModal">
                         <i class="bi bi-calendar-plus me-2"></i>Reservar Ahora
+                    </button>
+                    {% else %}
+                    <a href="{{ url_for('users.login') }}" class="btn btn-danger btn-lg px-4">
+                        <i class="bi bi-lock me-2"></i>Inicia sesión para reservar
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
     </div>
 </div>
+
+{% if current_user %}
+<!-- ── MODAL DE RESERVA ── -->
+<div class="modal fade" id="bookPromoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+
+            <div class="modal-header" style="background:linear-gradient(90deg,#c2185b,#e91e63);">
+                <div>
+                    <h5 class="modal-title text-white fw-bold mb-0">
+                        <i class="bi bi-calendar-plus me-2"></i>Reservar Combo
+                    </h5>
+                    <small class="text-white opacity-75">{{ promotion.name }}</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-4">
+
+                <!-- Indicador de progreso -->
+                <div class="mb-4">
+                    <div id="step-label" class="fw-semibold text-danger mb-2 small"></div>
+                    <div id="step-pips" class="d-flex gap-2"></div>
+                </div>
+
+                <!-- Contenedor de pasos (inyectado por JS) -->
+                <div id="steps-container"></div>
+
+                <!-- Panel de resumen -->
+                <div id="summary-panel" style="display:none;">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-check2-circle text-success me-2"></i>Resumen de tu reserva</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Servicio</th>
+                                    <th>Especialista</th>
+                                    <th>Fecha</th>
+                                    <th>Horario</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summary-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-3 p-3 rounded-3 bg-light">
+                        <span class="fw-semibold">Total del Combo</span>
+                        <span class="fw-bold fs-5 text-danger">${{ "%.2f"|format(promotion.promo_price) }}</span>
+                    </div>
+                    <div id="confirm-error" class="alert alert-danger mt-3 py-2 small" style="display:none;"></div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button id="btn-back" class="btn btn-outline-secondary" style="display:none;" onclick="promoGoBack()">
+                    <i class="bi bi-arrow-left me-1"></i>Atrás
+                </button>
+                <button id="btn-next" class="btn btn-danger" onclick="promoGoNext()">
+                    Siguiente <i class="bi bi-arrow-right ms-1"></i>
+                </button>
+                <button id="btn-confirm" class="btn btn-danger px-4" style="display:none;" onclick="promoConfirm()">
+                    <i class="bi bi-cart-plus me-2"></i>Agregar al Carrito
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Datos de la promoción para JS -->
+<script id="promo-services-data" type="application/json">{{ services_json | safe }}</script>
+
+{% block extra_js %}
+<script>
+(function () {
+    const SERVICES    = JSON.parse(document.getElementById('promo-services-data').textContent);
+    const PROMO_ID    = {{ promotion.id | tojson }};
+    const PROMO_NAME  = {{ promotion.name | tojson }};
+    const PROMO_PRICE = {{ promotion.promo_price }};
+    const CSRF_TOKEN  = {{ csrf_token() | tojson }};
+
+    let currentStep = 0;
+    const selections = SERVICES.map(() => ({
+        worker_id: null, worker_name: null,
+        date: null, start_time: null, end_time: null
+    }));
+
+    // ── Inicializar modal ─────────────────────────────────────────────────────
+    document.getElementById('bookPromoModal').addEventListener('show.bs.modal', function () {
+        if (document.getElementById('steps-container').children.length === 0) {
+            buildAllSteps();
+        }
+        currentStep = 0;
+        showStep(0);
+    });
+
+    function buildAllSteps() {
+        const container = document.getElementById('steps-container');
+        // Pips de progreso
+        const pipsWrap = document.getElementById('step-pips');
+        SERVICES.forEach((_, i) => {
+            const pip = document.createElement('div');
+            pip.id        = `pip-${i}`;
+            pip.className = 'rounded-circle d-flex align-items-center justify-content-center fw-bold';
+            pip.style.cssText = 'width:28px;height:28px;font-size:.75rem;border:2px solid #c2185b;color:#c2185b;background:#fff;transition:all .2s;';
+            pip.textContent = i + 1;
+            pipsWrap.appendChild(pip);
+            if (i < SERVICES.length - 1) {
+                const line = document.createElement('div');
+                line.style.cssText = 'flex:1;height:2px;background:#ddd;align-self:center;';
+                pipsWrap.appendChild(line);
+            }
+        });
+
+        SERVICES.forEach((svc, i) => {
+            const panel = document.createElement('div');
+            panel.id        = `step-panel-${i}`;
+            panel.className = 'step-panel';
+            panel.style.display = 'none';
+
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const minDate = tomorrow.toISOString().split('T')[0];
+
+            panel.innerHTML = `
+                <div class="d-flex align-items-center gap-3 p-3 rounded-3 mb-4" style="background:#fce4ec;">
+                    <i class="bi bi-scissors text-danger fs-4"></i>
+                    <div>
+                        <div class="fw-bold">${svc.name}</div>
+                        <div class="text-muted small"><i class="bi bi-clock me-1"></i>${svc.duration_minutes} min</div>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Especialista <span class="text-danger">*</span></label>
+                        <select id="worker-${i}" class="form-select">
+                            <option value="">Cargando especialistas...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Fecha <span class="text-danger">*</span></label>
+                        <input type="date" id="date-${i}" class="form-control" min="${minDate}">
+                    </div>
+                </div>
+                <div id="slots-area-${i}"></div>
+                <div id="step-error-${i}" class="alert alert-danger py-2 small mt-2" style="display:none;"></div>
+            `;
+            container.appendChild(panel);
+
+            // Eventos
+            document.getElementById(`worker-${i}`).addEventListener('change', () => onWorkerOrDateChange(i));
+            document.getElementById(`date-${i}`).addEventListener('change', () => onWorkerOrDateChange(i));
+
+            loadWorkers(i, svc.id);
+        });
+    }
+
+    // ── Carga de especialistas ────────────────────────────────────────────────
+    async function loadWorkers(stepIdx, serviceId) {
+        const sel = document.getElementById(`worker-${stepIdx}`);
+        try {
+            const resp = await fetch(`/promotions/api/workers/${serviceId}`);
+            const data = await resp.json();
+            if (data.success && data.workers.length > 0) {
+                sel.innerHTML = '<option value="">-- Selecciona una especialista --</option>';
+                data.workers.forEach(w => {
+                    const opt = document.createElement('option');
+                    opt.value       = w.worker_id;
+                    opt.textContent = `${w.first_name} ${w.last_name}`;
+                    sel.appendChild(opt);
+                });
+            } else {
+                sel.innerHTML = '<option value="">Sin especialistas disponibles</option>';
+            }
+        } catch {
+            sel.innerHTML = '<option value="">Error al cargar</option>';
+        }
+    }
+
+    // ── Carga de horarios ─────────────────────────────────────────────────────
+    function onWorkerOrDateChange(stepIdx) {
+        selections[stepIdx].start_time = null;
+        selections[stepIdx].end_time   = null;
+        const workerId = document.getElementById(`worker-${stepIdx}`).value;
+        const date     = document.getElementById(`date-${stepIdx}`).value;
+        const area     = document.getElementById(`slots-area-${stepIdx}`);
+        area.innerHTML = '';
+        if (workerId && date) loadSlots(stepIdx, workerId, date);
+    }
+
+    async function loadSlots(stepIdx, workerId, date) {
+        const svc  = SERVICES[stepIdx];
+        const area = document.getElementById(`slots-area-${stepIdx}`);
+        area.innerHTML = `<div class="text-center text-muted py-2 small"><span class="spinner-border spinner-border-sm me-2"></span>Buscando horarios...</div>`;
+
+        try {
+            const resp = await fetch(`/promotions/api/slots?service_id=${svc.id}&worker_id=${workerId}&date=${date}`);
+            const data = await resp.json();
+
+            if (!data.success || data.slots.length === 0) {
+                area.innerHTML = '<div class="alert alert-warning py-2 small"><i class="bi bi-exclamation-circle me-1"></i>Sin horarios disponibles para esta fecha.</div>';
+                return;
+            }
+
+            area.innerHTML = '<div class="fw-semibold small mb-2">Selecciona un horario:</div>';
+            const grid = document.createElement('div');
+            grid.className = 'd-flex flex-wrap gap-2';
+            data.slots.forEach(slot => {
+                const btn = document.createElement('button');
+                btn.type        = 'button';
+                btn.className   = 'btn btn-outline-danger btn-sm slot-btn';
+                btn.dataset.start = slot.start;
+                btn.dataset.end   = slot.end;
+                btn.textContent = `${slot.start} - ${slot.end}`;
+                btn.addEventListener('click', () => selectSlot(stepIdx, btn));
+                grid.appendChild(btn);
+            });
+            area.appendChild(grid);
+        } catch {
+            area.innerHTML = '<div class="alert alert-danger py-2 small">Error al cargar horarios. Intenta nuevamente.</div>';
+        }
+    }
+
+    function selectSlot(stepIdx, btn) {
+        document.querySelectorAll(`#slots-area-${stepIdx} .slot-btn`).forEach(b => {
+            b.classList.remove('btn-danger');
+            b.classList.add('btn-outline-danger');
+        });
+        btn.classList.remove('btn-outline-danger');
+        btn.classList.add('btn-danger');
+    }
+
+    // ── Navegación de pasos ───────────────────────────────────────────────────
+    function showStep(idx) {
+        document.querySelectorAll('.step-panel').forEach(p => p.style.display = 'none');
+        document.getElementById('summary-panel').style.display = 'none';
+        document.getElementById('confirm-error').style.display = 'none';
+
+        const isSummary = idx >= SERVICES.length;
+
+        if (isSummary) {
+            buildSummary();
+            document.getElementById('summary-panel').style.display = '';
+            document.getElementById('btn-next').style.display    = 'none';
+            document.getElementById('btn-confirm').style.display = '';
+        } else {
+            document.getElementById(`step-panel-${idx}`).style.display = '';
+            document.getElementById('btn-next').style.display    = '';
+            document.getElementById('btn-confirm').style.display = 'none';
+            document.getElementById('btn-next').innerHTML =
+                idx === SERVICES.length - 1
+                    ? 'Ver Resumen <i class="bi bi-list-check ms-1"></i>'
+                    : 'Siguiente <i class="bi bi-arrow-right ms-1"></i>';
+        }
+
+        document.getElementById('btn-back').style.display = idx === 0 ? 'none' : '';
+        updatePips(idx);
+
+        const label = document.getElementById('step-label');
+        label.textContent = isSummary
+            ? `Paso ${SERVICES.length + 1} de ${SERVICES.length + 1}: Resumen`
+            : `Paso ${idx + 1} de ${SERVICES.length + 1}: ${SERVICES[idx].name}`;
+    }
+
+    function updatePips(activeIdx) {
+        SERVICES.forEach((_, i) => {
+            const pip = document.getElementById(`pip-${i}`);
+            if (!pip) return;
+            if (i < activeIdx) {
+                pip.style.background = '#c2185b';
+                pip.style.color      = '#fff';
+                pip.innerHTML = '<i class="bi bi-check" style="font-size:.8rem;"></i>';
+            } else if (i === activeIdx) {
+                pip.style.background = '#c2185b';
+                pip.style.color      = '#fff';
+                pip.textContent = i + 1;
+            } else {
+                pip.style.background = '#fff';
+                pip.style.color      = '#c2185b';
+                pip.textContent = i + 1;
+            }
+        });
+    }
+
+    window.promoGoNext = function () {
+        if (currentStep < SERVICES.length) {
+            const errEl     = document.getElementById(`step-error-${currentStep}`);
+            const workerSel = document.getElementById(`worker-${currentStep}`);
+            const dateInput = document.getElementById(`date-${currentStep}`);
+            const slotBtn   = document.querySelector(`#slots-area-${currentStep} .slot-btn.btn-danger`);
+
+            errEl.style.display = 'none';
+
+            if (!workerSel.value) {
+                errEl.textContent = 'Selecciona una especialista.';
+                errEl.style.display = '';
+                return;
+            }
+            if (!dateInput.value) {
+                errEl.textContent = 'Selecciona una fecha.';
+                errEl.style.display = '';
+                return;
+            }
+            if (!slotBtn) {
+                errEl.textContent = 'Selecciona un horario disponible.';
+                errEl.style.display = '';
+                return;
+            }
+
+            // Guardar selección desde el DOM en el momento de avanzar
+            selections[currentStep].worker_id   = workerSel.value;
+            selections[currentStep].worker_name = workerSel.options[workerSel.selectedIndex].text;
+            selections[currentStep].date        = dateInput.value;
+            selections[currentStep].start_time  = slotBtn.dataset.start;
+            selections[currentStep].end_time    = slotBtn.dataset.end;
+
+            currentStep++;
+            showStep(currentStep);
+        }
+    };
+
+    window.promoGoBack = function () {
+        if (currentStep > 0) {
+            currentStep--;
+            showStep(currentStep);
+        }
+    };
+
+    // ── Resumen ───────────────────────────────────────────────────────────────
+    function buildSummary() {
+        const tbody = document.getElementById('summary-tbody');
+        tbody.innerHTML = '';
+        SERVICES.forEach((svc, i) => {
+            const s  = selections[i];
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="fw-semibold small">${svc.name}</td>
+                <td class="small">${s.worker_name}</td>
+                <td class="small">${s.date}</td>
+                <td class="small">${s.start_time} – ${s.end_time}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // ── Confirmar y agregar al carrito ────────────────────────────────────────
+    window.promoConfirm = async function () {
+        const btn = document.getElementById('btn-confirm');
+        btn.disabled   = true;
+        btn.innerHTML  = '<span class="spinner-border spinner-border-sm me-2"></span>Agregando...';
+
+        const payload = {
+            promotion_id: PROMO_ID,
+            promo_name:   PROMO_NAME,
+            promo_price:  PROMO_PRICE,
+            selections:   SERVICES.map((svc, i) => ({
+                service_id: svc.id,
+                worker_id:  selections[i].worker_id,
+                date:       selections[i].date,
+                start_time: selections[i].start_time
+            }))
+        };
+
+        try {
+            const resp = await fetch('/cart/add-promotion', {
+                method:  'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken':  CSRF_TOKEN
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await resp.json();
+
+            if (data.success) {
+                window.location.href = '/cart/';
+            } else {
+                btn.disabled  = false;
+                btn.innerHTML = '<i class="bi bi-cart-plus me-2"></i>Agregar al Carrito';
+                const errEl = document.getElementById('confirm-error');
+                errEl.textContent    = data.message || 'Error al agregar. Intenta nuevamente.';
+                errEl.style.display  = '';
+            }
+        } catch {
+            btn.disabled  = false;
+            btn.innerHTML = '<i class="bi bi-cart-plus me-2"></i>Agregar al Carrito';
+            const errEl = document.getElementById('confirm-error');
+            errEl.textContent   = 'Error de conexión. Intenta nuevamente.';
+            errEl.style.display = '';
+        }
+    };
+})();
+</script>
+{% endblock %}
+{% endif %}
+
 {% endblock %}
