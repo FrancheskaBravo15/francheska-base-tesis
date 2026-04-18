@@ -60,7 +60,16 @@
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('worker.schedule') }}"><i class="bi bi-clock me-1"></i>Horario</a></li>
 
                 {% else %}
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('wishlist.view') }}"><i class="bi bi-heart me-1"></i>Favoritos</a></li>
+                <li class="nav-item">
+                    <a class="nav-link position-relative" href="{{ url_for('wishlist.view') }}">
+                        <i class="bi bi-heart me-1"></i>Favoritos
+                        {% if wishlist_count and wishlist_count > 0 %}
+                        <span class="badge bg-white text-dark position-absolute top-0 start-100 translate-middle">
+                            {{ wishlist_count }}
+                        </span>
+                        {% endif %}
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link position-relative" href="{{ url_for('cart.view_cart') }}">
                             <i class="bi bi-cart me-1"></i>Carrito
