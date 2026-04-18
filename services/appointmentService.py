@@ -190,6 +190,18 @@ class AppointmentService:
             return {"success": False, "message": f"Error al rechazar reagendamiento: {e}"}
 
     @staticmethod
+    def cancel_group(promotion_id: str, client_id: str) -> Dict:
+        """Cancela todas las citas activas del cliente para un combo."""
+        try:
+            count = AppointmentRepository.cancel_by_client_and_promotion(client_id, promotion_id)
+            if count == 0:
+                return {"success": False, "message": "No hay citas activas para cancelar en este combo"}
+            return {"success": True,
+                    "message": f"Combo cancelado ({count} cita(s)). No se realizan devoluciones."}
+        except Exception as e:
+            return {"success": False, "message": f"Error al cancelar combo: {e}"}
+
+    @staticmethod
     def count_pending_reschedules(client_id: str) -> int:
         """Cuántas propuestas de reagendamiento están esperando respuesta del cliente."""
         try:
@@ -224,7 +236,9 @@ class AppointmentService:
                     "proposed_date":       a.proposed_date,
                     "proposed_start_time": a.proposed_start_time,
                     "proposed_end_time":   a.proposed_end_time,
-                    "reschedule_reason":   a.reschedule_reason
+                    "reschedule_reason":   a.reschedule_reason,
+                    "promotion_id":        a.promotion_id,
+                    "promotion_name":      a.promotion_name
                 })
             return {"success": True, "appointments": result}
         except Exception as e:
@@ -243,6 +257,7 @@ class AppointmentService:
                 client_person = PersonRepository.find_by_user_id(a.client_id)
                 result.append({
                     "appointment_id": a.id,
+                    "client_id":      a.client_id,
                     "date":           a.date,
                     "start_time":     a.start_time,
                     "end_time":       a.end_time,
@@ -252,7 +267,9 @@ class AppointmentService:
                     "worker_name":    (f"{worker_person.first_name} {worker_person.last_name}"
                                       if worker_person else "N/A"),
                     "total_price":    a.total_price,
-                    "status":         a.status
+                    "status":         a.status,
+                    "promotion_id":   a.promotion_id,
+                    "promotion_name": a.promotion_name
                 })
             return {"success": True, "appointments": result}
         except Exception as e:

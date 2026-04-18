@@ -312,9 +312,34 @@ def worker_schedule(worker_id):
 @admin_bp.route('/appointments', methods=['GET'])
 @role_required('admin')
 def appointments():
-    result = AppointmentService.get_all_appointments()
+    all_appts = AppointmentService.get_all_appointments().get("appointments", [])
+
+    promo_groups = {}
+    standalone   = []
+    for appt in all_appts:
+        pid = appt.get("promotion_id")
+        if pid:
+            key = f"{pid}::{appt.get('client_id', '')}"
+            if key not in promo_groups:
+                promo_groups[key] = {
+                    "group_key":      key,
+                    "promotion_id":   pid,
+                    "promotion_name": appt["promotion_name"],
+                    "client_name":    appt["client_name"],
+                    "status":         appt["status"],
+                    "group_total":    0.0,
+                    "entries":        []
+                }
+            promo_groups[key]["entries"].append(appt)
+            promo_groups[key]["group_total"] = round(
+                promo_groups[key]["group_total"] + appt["total_price"], 2
+            )
+        else:
+            standalone.append(appt)
+
     return render_template('/views/admin/appointments.html',
-                           appointments=result.get("appointments", []))
+                           promo_groups=list(promo_groups.values()),
+                           standalone=standalone)
 
 
 # ──────────────────────────────────────────

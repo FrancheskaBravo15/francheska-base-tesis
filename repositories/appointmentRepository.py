@@ -119,6 +119,21 @@ class AppointmentRepository:
             raise
 
     @classmethod
+    def cancel_by_client_and_promotion(cls, client_id: str, promotion_id: str) -> int:
+        """Cancela todas las citas activas de un cliente para un combo."""
+        try:
+            collection = cls._get_collection()
+            result = collection.update_many(
+                {"client_id": client_id, "promotion_id": promotion_id,
+                 "status": {"$nin": ["cancelada"]}},
+                {"$set": {"status": "cancelada"}}
+            )
+            return result.modified_count
+        except PyMongoError as e:
+            print(f"Error al cancelar citas del combo: {e}")
+            raise
+
+    @classmethod
     def has_conflict(cls, worker_id: str, date: str, start_time: str, end_time: str,
                      exclude_id: str = None) -> bool:
         """

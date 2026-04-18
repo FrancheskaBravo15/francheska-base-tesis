@@ -91,7 +91,8 @@ class CartService:
     def checkout(user_id: str) -> Dict:
         """
         Convierte los ítems del carrito en citas confirmadas.
-        Verifica conflictos antes de crear cada cita.
+        - Combos: verifica TODOS los conflictos antes de crear cualquiera (todo-o-nada).
+        - Individuales: crea cada uno independientemente.
         """
         from models.appointmentModel import AppointmentModel
         from repositories.appointmentRepository import AppointmentRepository as AR
@@ -101,16 +102,61 @@ class CartService:
             if not cart or not cart.items:
                 return {"success": False, "message": "El carrito está vacío"}
 
+            # Separar combos de individuales
+            promo_groups     = {}
+            standalone_items = []
+            for item in cart.items:
+                if item.promotion_id:
+                    if item.promotion_id not in promo_groups:
+                        promo_groups[item.promotion_id] = {
+                            "name":  item.promotion_name,
+                            "items": []
+                        }
+                    promo_groups[item.promotion_id]["items"].append(item)
+                else:
+                    standalone_items.append(item)
+
             created = []
             failed  = []
 
-            for item in cart.items:
-                # Re-verificar conflicto en el momento del checkout
-                if AR.has_conflict(item.worker_id, item.date, item.start_time, item.end_time):
-                    failed.append(f"'{item.service_name}' con {item.worker_name} el {item.date} a las {item.start_time} ya no está disponible")
+            # ── Combos: todo-o-nada ──────────────────────────────────────────
+            for promo_id, group in promo_groups.items():
+                conflicts = [
+                    f"'{i.service_name}' con {i.worker_name} el {i.date} a las {i.start_time}"
+                    for i in group["items"]
+                    if AR.has_conflict(i.worker_id, i.date, i.start_time, i.end_time)
+                ]
+                if conflicts:
+                    failed.append(
+                        f"Combo '{group['name']}' no confirmado: "
+                        + "; ".join(conflicts)
+                        + " ya no está disponible"
+                    )
                     continue
 
-                appt = AppointmentModel(
+                for item in group["items"]:
+                    AR.create(AppointmentModel(
+                        client_id=user_id,
+                        worker_id=item.worker_id,
+                        service_id=item.service_id,
+                        date=item.date,
+                        start_time=item.start_time,
+                        end_time=item.end_time,
+                        total_price=item.price,
+                        promotion_id=item.promotion_id,
+                        promotion_name=item.promotion_name
+                    ))
+                created.append(f"Combo '{group['name']}'")
+
+            # ── Individuales ─────────────────────────────────────────────────
+            for item in standalone_items:
+                if AR.has_conflict(item.worker_id, item.date, item.start_time, item.end_time):
+                    failed.append(
+                        f"'{item.service_name}' con {item.worker_name} "
+                        f"el {item.date} a las {item.start_time} ya no está disponible"
+                    )
+                    continue
+                AR.create(AppointmentModel(
                     client_id=user_id,
                     worker_id=item.worker_id,
                     service_id=item.service_id,
@@ -118,19 +164,17 @@ class CartService:
                     start_time=item.start_time,
                     end_time=item.end_time,
                     total_price=item.price
-                )
-                AR.create(appt)
+                ))
                 created.append(item.service_name)
 
             if failed and not created:
                 return {"success": False, "message": "No se pudo confirmar ninguna cita: " + "; ".join(failed)}
 
-            # Vaciar carrito
             CartRepository.clear(user_id)
 
-            msg = f"{len(created)} cita(s) confirmada(s)."
+            msg = f"{len(created)} elemento(s) confirmado(s)."
             if failed:
-                msg += f" {len(failed)} no se pudo confirmar: " + "; ".join(failed)
+                msg += " No se pudo confirmar: " + "; ".join(failed)
 
             return {"success": True, "message": msg, "created": created, "failed": failed}
         except Exception as e:

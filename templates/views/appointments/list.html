@@ -34,114 +34,185 @@
     <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="cancelada">Canceladas</button>
 </div>
 
-{% if appointments %}
-    <div class="row g-3" id="appointmentsList">
-        {% for appt in appointments %}
-        <div class="col-md-6 appt-card" data-status="{{ appt.status }}">
-            <div class="card border-0 shadow-sm h-100 {% if appt.status == 'pendiente_reagenda' %}border-warning border{% endif %}">
-                <div class="card-body">
-                    <!-- Encabezado -->
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h6 class="fw-bold mb-0">{{ appt.service_name }}</h6>
-                        {% if appt.status == 'confirmada' %}
+{% if promo_groups or standalone %}
+<div class="row g-3" id="appointmentsList">
+
+    <!-- ── COMBOS ── -->
+    {% for group in promo_groups %}
+    <div class="col-12 appt-card" data-status="{{ group.status }}">
+        <div class="card border-0 shadow-sm" style="border-left:4px solid #c2185b !important;">
+            <!-- Cabecera del combo -->
+            <div class="card-header py-2 px-3"
+                 style="background:#fce4ec;border-bottom:1px solid #f8bbd0;">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-tag-fill text-danger"></i>
+                        <span class="fw-bold text-danger">COMBO: {{ group.promotion_name }}</span>
+                        {% if group.status == 'confirmada' %}
                             <span class="badge bg-success">Confirmada</span>
-                        {% elif appt.status == 'pendiente_reagenda' %}
-                            <span class="badge bg-warning text-dark">
-                                <i class="bi bi-clock-history me-1"></i>Reagendamiento propuesto
-                            </span>
-                        {% elif appt.status == 'completada' %}
+                        {% elif group.status == 'pendiente_reagenda' %}
+                            <span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i>Reagendamiento</span>
+                        {% elif group.status == 'completada' %}
                             <span class="badge bg-secondary">Completada</span>
-                        {% elif appt.status == 'cancelada' %}
+                        {% elif group.status == 'cancelada' %}
                             <span class="badge bg-danger">Cancelada</span>
                         {% endif %}
                     </div>
-
-                    <span class="badge bg-danger-subtle text-danger mb-2">{{ appt.service_category }}</span>
-
-                    <!-- Info del horario actual -->
-                    <div class="text-muted small mb-2">
-                        <div><i class="bi bi-person-badge me-2"></i>{{ appt.worker_name }}</div>
-                        <div><i class="bi bi-calendar me-2"></i>{{ appt.date }}</div>
-                        <div><i class="bi bi-clock me-2"></i>{{ appt.start_time }} - {{ appt.end_time }}</div>
-                    </div>
-
-                    <!-- Propuesta de reagendamiento -->
-                    {% if appt.status == 'pendiente_reagenda' %}
-                    <div class="rounded-3 p-3 mb-3" style="background-color:#fff8e1;">
-                        <div class="fw-semibold small mb-1">
-                            <i class="bi bi-calendar2-plus me-1 text-warning"></i>Nuevo horario propuesto:
-                        </div>
-                        <div class="text-muted small">
-                            <i class="bi bi-calendar me-1"></i><strong>{{ appt.proposed_date }}</strong>
-                            &nbsp;·&nbsp;
-                            <i class="bi bi-clock me-1"></i><strong>{{ appt.proposed_start_time }} - {{ appt.proposed_end_time }}</strong>
-                        </div>
-                        {% if appt.reschedule_reason %}
-                        <div class="text-muted small mt-1">
-                            <i class="bi bi-chat-left-text me-1"></i>
-                            <em>"{{ appt.reschedule_reason }}"</em>
-                        </div>
-                        {% endif %}
-
-                        <!-- Botones aceptar / rechazar -->
-                        <div class="d-flex gap-2 mt-3">
-                            <form method="POST"
-                                  action="{{ url_for('appointments.accept_reschedule', appointment_id=appt.appointment_id) }}"
-                                  onsubmit="return confirm('¿Aceptar el nuevo horario propuesto?')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button class="btn btn-sm btn-success">
-                                    <i class="bi bi-check-circle me-1"></i>Aceptar
-                                </button>
-                            </form>
-                            <form method="POST"
-                                  action="{{ url_for('appointments.reject_reschedule', appointment_id=appt.appointment_id) }}"
-                                  onsubmit="return confirm('¿Rechazar la propuesta? La cita se mantendrá en el horario original.')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button class="btn btn-sm btn-outline-danger">
-                                    <i class="bi bi-x-circle me-1"></i>Rechazar
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <!-- Precio y acciones -->
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="fw-bold text-danger">${{ "%.2f"|format(appt.total_price) }}</span>
-                        {% if appt.status == 'confirmada' %}
-                            <form method="POST"
-                                  action="{{ url_for('appointments.cancel', appointment_id=appt.appointment_id) }}"
-                                  onsubmit="return confirm('¿Cancelar esta cita? No hay devolución de dinero.')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button class="btn btn-sm btn-outline-danger">
-                                    <i class="bi bi-x-circle me-1"></i>Cancelar
-                                </button>
-                            </form>
-                        {% elif appt.status == 'pendiente_reagenda' %}
-                            <form method="POST"
-                                  action="{{ url_for('appointments.cancel', appointment_id=appt.appointment_id) }}"
-                                  onsubmit="return confirm('¿Cancelar esta cita? No hay devolución de dinero.')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button class="btn btn-sm btn-outline-danger">
-                                    <i class="bi bi-x-circle me-1"></i>Cancelar
-                                </button>
-                            </form>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="fw-bold text-danger">${{ "%.2f"|format(group.group_total) }}</span>
+                        {% if group.status in ['confirmada', 'pendiente_reagenda'] %}
+                        <form method="POST"
+                              action="{{ url_for('appointments.cancel_group', promotion_id=group.promotion_id) }}"
+                              onsubmit="return confirm('¿Cancelar todo el combo? No hay devolución de dinero.')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-x-circle me-1"></i>Cancelar Combo
+                            </button>
+                        </form>
                         {% endif %}
                     </div>
                 </div>
             </div>
+
+            <div class="card-body p-0">
+                {% for appt in group.entries %}
+                <div class="px-3 py-3 {% if not loop.last %}border-bottom{% endif %}">
+                    <div class="row align-items-start g-2">
+                        <div class="col-md-8">
+                            <div class="fw-semibold">{{ appt.service_name }}</div>
+                            <span class="badge bg-danger-subtle text-danger mb-1">{{ appt.service_category }}</span>
+                            <div class="text-muted small">
+                                <i class="bi bi-person-badge me-1"></i>{{ appt.worker_name }}<br>
+                                <i class="bi bi-calendar me-1"></i>{{ appt.date }}
+                                &nbsp;<i class="bi bi-clock me-1"></i>{{ appt.start_time }} – {{ appt.end_time }}
+                            </div>
+
+                            <!-- Propuesta de reagendamiento -->
+                            {% if appt.status == 'pendiente_reagenda' %}
+                            <div class="rounded-3 p-2 mt-2" style="background-color:#fff8e1;">
+                                <div class="fw-semibold small mb-1">
+                                    <i class="bi bi-calendar2-plus me-1 text-warning"></i>Nuevo horario propuesto:
+                                </div>
+                                <div class="text-muted small">
+                                    <strong>{{ appt.proposed_date }}</strong>
+                                    &nbsp;·&nbsp;
+                                    <strong>{{ appt.proposed_start_time }} – {{ appt.proposed_end_time }}</strong>
+                                </div>
+                                {% if appt.reschedule_reason %}
+                                <div class="text-muted small mt-1"><em>"{{ appt.reschedule_reason }}"</em></div>
+                                {% endif %}
+                                <div class="d-flex gap-2 mt-2">
+                                    <form method="POST" action="{{ url_for('appointments.accept_reschedule', appointment_id=appt.appointment_id) }}"
+                                          onsubmit="return confirm('¿Aceptar el nuevo horario?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button class="btn btn-sm btn-success"><i class="bi bi-check-circle me-1"></i>Aceptar</button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('appointments.reject_reschedule', appointment_id=appt.appointment_id) }}"
+                                          onsubmit="return confirm('¿Rechazar la propuesta?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle me-1"></i>Rechazar</button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         </div>
-        {% endfor %}
     </div>
+    {% endfor %}
+
+    <!-- ── CITAS INDIVIDUALES ── -->
+    {% for appt in standalone %}
+    <div class="col-md-6 appt-card" data-status="{{ appt.status }}">
+        <div class="card border-0 shadow-sm h-100 {% if appt.status == 'pendiente_reagenda' %}border-warning border{% endif %}">
+            <div class="card-body">
+                <!-- Encabezado -->
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="fw-bold mb-0">{{ appt.service_name }}</h6>
+                    {% if appt.status == 'confirmada' %}
+                        <span class="badge bg-success">Confirmada</span>
+                    {% elif appt.status == 'pendiente_reagenda' %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-clock-history me-1"></i>Reagendamiento propuesto
+                        </span>
+                    {% elif appt.status == 'completada' %}
+                        <span class="badge bg-secondary">Completada</span>
+                    {% elif appt.status == 'cancelada' %}
+                        <span class="badge bg-danger">Cancelada</span>
+                    {% endif %}
+                </div>
+
+                <span class="badge bg-danger-subtle text-danger mb-2">{{ appt.service_category }}</span>
+
+                <div class="text-muted small mb-2">
+                    <div><i class="bi bi-person-badge me-2"></i>{{ appt.worker_name }}</div>
+                    <div><i class="bi bi-calendar me-2"></i>{{ appt.date }}</div>
+                    <div><i class="bi bi-clock me-2"></i>{{ appt.start_time }} - {{ appt.end_time }}</div>
+                </div>
+
+                <!-- Propuesta de reagendamiento -->
+                {% if appt.status == 'pendiente_reagenda' %}
+                <div class="rounded-3 p-3 mb-3" style="background-color:#fff8e1;">
+                    <div class="fw-semibold small mb-1">
+                        <i class="bi bi-calendar2-plus me-1 text-warning"></i>Nuevo horario propuesto:
+                    </div>
+                    <div class="text-muted small">
+                        <strong>{{ appt.proposed_date }}</strong>
+                        &nbsp;·&nbsp;
+                        <strong>{{ appt.proposed_start_time }} - {{ appt.proposed_end_time }}</strong>
+                    </div>
+                    {% if appt.reschedule_reason %}
+                    <div class="text-muted small mt-1"><em>"{{ appt.reschedule_reason }}"</em></div>
+                    {% endif %}
+                    <div class="d-flex gap-2 mt-3">
+                        <form method="POST" action="{{ url_for('appointments.accept_reschedule', appointment_id=appt.appointment_id) }}"
+                              onsubmit="return confirm('¿Aceptar el nuevo horario propuesto?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-sm btn-success"><i class="bi bi-check-circle me-1"></i>Aceptar</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('appointments.reject_reschedule', appointment_id=appt.appointment_id) }}"
+                              onsubmit="return confirm('¿Rechazar la propuesta?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle me-1"></i>Rechazar</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Precio y acciones -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-danger">${{ "%.2f"|format(appt.total_price) }}</span>
+                    {% if appt.status in ['confirmada', 'pendiente_reagenda'] %}
+                    <form method="POST"
+                          action="{{ url_for('appointments.cancel', appointment_id=appt.appointment_id) }}"
+                          onsubmit="return confirm('¿Cancelar esta cita? No hay devolución de dinero.')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
 {% else %}
-    <div class="text-center py-5 text-muted">
-        <i class="bi bi-calendar-x" style="font-size:4rem;"></i>
-        <h5 class="mt-4">No tienes citas aún</h5>
-        <p>Explora nuestros servicios y agenda tu primera cita.</p>
-        <a href="{{ url_for('services.catalog') }}" class="btn btn-danger mt-2">
-            <i class="bi bi-scissors me-2"></i>Ver Servicios
-        </a>
-    </div>
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-calendar-x" style="font-size:4rem;"></i>
+    <h5 class="mt-4">No tienes citas aún</h5>
+    <p>Explora nuestros servicios y agenda tu primera cita.</p>
+    <a href="{{ url_for('services.catalog') }}" class="btn btn-danger mt-2">
+        <i class="bi bi-scissors me-2"></i>Ver Servicios
+    </a>
+</div>
 {% endif %}
 {% endblock %}
 

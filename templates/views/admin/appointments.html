@@ -23,25 +23,110 @@
             <table class="table table-hover align-middle mb-0" id="appointmentsTable">
                 <thead style="background-color:#fce4ec;">
                     <tr>
-                        <th class="ps-3">Fecha</th>
-                        <th>Hora</th>
-                        <th>Servicio</th>
+                        <th class="ps-3">Fecha / Hora</th>
+                        <th>Servicio / Combo</th>
                         <th>Cliente</th>
                         <th>Trabajadora</th>
                         <th>Total</th>
-                        <th class="pe-3">Estado</th>
+                        <th>Estado</th>
+                        <th class="pe-3">Tipo</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for appt in appointments %}
+
+                    <!-- ── COMBOS ── -->
+                    {% for group in promo_groups %}
+                    {# Fila principal del combo (clicable para expandir) #}
+                    <tr data-status="{{ group.status }}"
+                        class="combo-header"
+                        style="background:#fff8fb;cursor:pointer;"
+                        data-target="detail-{{ loop.index0 }}"
+                        onclick="toggleDetail('detail-{{ loop.index0 }}', this)">
+                        <td class="ps-3">
+                            {% for e in group.entries %}
+                            <div class="small {% if not loop.first %}text-muted{% else %}fw-semibold{% endif %}">
+                                {{ e.date }}<br>
+                                <span class="text-muted">{{ e.start_time }} – {{ e.end_time }}</span>
+                            </div>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <span class="badge me-1" style="background:#c2185b;">
+                                <i class="bi bi-tag-fill me-1"></i>COMBO
+                            </span>
+                            <span class="fw-semibold">{{ group.promotion_name }}</span>
+                            <div class="text-muted small mt-1">
+                                {% for e in group.entries %}
+                                <span>{{ e.service_name }}</span>{% if not loop.last %} &middot; {% endif %}
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td>{{ group.client_name }}</td>
+                        <td class="small">
+                            {% for e in group.entries %}
+                            <div>{{ e.worker_name }}</div>
+                            {% endfor %}
+                        </td>
+                        <td class="fw-bold text-danger">${{ "%.2f"|format(group.group_total) }}</td>
+                        <td>
+                            {% if group.status == 'confirmada' %}
+                                <span class="badge bg-success">Confirmada</span>
+                            {% elif group.status == 'completada' %}
+                                <span class="badge bg-secondary">Completada</span>
+                            {% elif group.status == 'cancelada' %}
+                                <span class="badge bg-danger">Cancelada</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">{{ group.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-3">
+                            <span class="badge" style="background:#c2185b;">
+                                <i class="bi bi-tag-fill me-1"></i>Combo
+                            </span>
+                            <i class="bi bi-chevron-down ms-1 small toggle-icon"></i>
+                        </td>
+                    </tr>
+                    {# Fila de detalle expandible #}
+                    <tr id="detail-{{ loop.index0 }}" style="display:none;background:#fff0f5;">
+                        <td colspan="7" class="py-2 px-4">
+                            <table class="table table-sm table-borderless mb-0">
+                                <thead class="text-muted small">
+                                    <tr>
+                                        <th>Servicio</th>
+                                        <th>Especialista</th>
+                                        <th>Fecha</th>
+                                        <th>Horario</th>
+                                        <th>Precio (part.)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for e in group.entries %}
+                                    <tr class="small">
+                                        <td class="fw-semibold">{{ e.service_name }}</td>
+                                        <td>{{ e.worker_name }}</td>
+                                        <td>{{ e.date }}</td>
+                                        <td>{{ e.start_time }} – {{ e.end_time }}</td>
+                                        <td class="text-muted">${{ "%.2f"|format(e.total_price) }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    <!-- ── CITAS INDIVIDUALES ── -->
+                    {% for appt in standalone %}
                     <tr data-status="{{ appt.status }}">
-                        <td class="ps-3 fw-semibold">{{ appt.date }}</td>
-                        <td class="text-muted small">{{ appt.start_time }} - {{ appt.end_time }}</td>
+                        <td class="ps-3">
+                            <div class="fw-semibold">{{ appt.date }}</div>
+                            <div class="text-muted small">{{ appt.start_time }} – {{ appt.end_time }}</div>
+                        </td>
                         <td>{{ appt.service_name }}</td>
                         <td>{{ appt.client_name }}</td>
                         <td>{{ appt.worker_name }}</td>
                         <td class="fw-semibold text-danger">${{ "%.2f"|format(appt.total_price) }}</td>
-                        <td class="pe-3">
+                        <td>
                             {% if appt.status == 'confirmada' %}
                                 <span class="badge bg-success">Confirmada</span>
                             {% elif appt.status == 'completada' %}
@@ -52,15 +137,21 @@
                                 <span class="badge bg-warning text-dark">{{ appt.status }}</span>
                             {% endif %}
                         </td>
+                        <td class="pe-3">
+                            <span class="badge bg-light text-muted border">Individual</span>
+                        </td>
                     </tr>
-                    {% else %}
+                    {% endfor %}
+
+                    {% if not promo_groups and not standalone %}
                     <tr>
                         <td colspan="7" class="text-center text-muted py-5">
                             <i class="bi bi-calendar-x" style="font-size:2rem;"></i>
                             <p class="mt-2 mb-0">No hay citas registradas</p>
                         </td>
                     </tr>
-                    {% endfor %}
+                    {% endif %}
+
                 </tbody>
             </table>
         </div>
@@ -70,16 +161,43 @@
 
 {% block extra_js %}
 <script>
+function toggleDetail(id, headerRow) {
+    const detail = document.getElementById(id);
+    const icon   = headerRow.querySelector('.toggle-icon');
+    if (detail.style.display === 'none') {
+        detail.style.display = '';
+        icon?.classList.replace('bi-chevron-down', 'bi-chevron-up');
+    } else {
+        detail.style.display = 'none';
+        icon?.classList.replace('bi-chevron-up', 'bi-chevron-down');
+    }
+}
+
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.filter-btn').forEach(b => {
-            b.classList.remove('btn-danger', 'btn-success', 'btn-secondary', 'btn-outline-success', 'btn-outline-secondary', 'btn-outline-danger', 'active');
-            b.classList.add('btn-outline-' + (b.dataset.filter === 'all' ? 'danger' : b.dataset.filter === 'confirmada' ? 'success' : b.dataset.filter === 'completada' ? 'secondary' : 'danger'));
+            b.classList.remove('btn-danger', 'btn-success', 'btn-secondary',
+                               'btn-outline-success', 'btn-outline-secondary', 'btn-outline-danger', 'active');
+            const map = {all:'danger', confirmada:'success', completada:'secondary', cancelada:'danger'};
+            b.classList.add('btn-outline-' + (map[b.dataset.filter] || 'secondary'));
         });
         btn.classList.add('active');
+
         const filter = btn.dataset.filter;
-        document.querySelectorAll('#appointmentsTable tbody tr[data-status]').forEach(row => {
+
+        // Filtrar filas individuales
+        document.querySelectorAll('#appointmentsTable tbody tr[data-status]:not(.combo-header)').forEach(row => {
+            if (row.id && row.id.startsWith('detail-')) return; // skip detail rows
             row.style.display = (filter === 'all' || row.dataset.status === filter) ? '' : 'none';
+        });
+
+        // Filtrar combos (header + detail)
+        document.querySelectorAll('.combo-header').forEach(row => {
+            const show = filter === 'all' || row.dataset.status === filter;
+            row.style.display = show ? '' : 'none';
+            const detailId = row.dataset.target;
+            if (detailId) document.getElementById(detailId).style.display = 'none'; // colapsar al filtrar
+            if (show) row.querySelector('.toggle-icon')?.classList.replace('bi-chevron-up', 'bi-chevron-down');
         });
     });
 });

@@ -16,7 +16,8 @@ class AppointmentModel:
     def __init__(self, client_id, worker_id, service_id, date, start_time, end_time,
                  total_price, status="confirmada", notes="", id=None,
                  proposed_date=None, proposed_start_time=None,
-                 proposed_end_time=None, reschedule_reason=None):
+                 proposed_end_time=None, reschedule_reason=None,
+                 promotion_id=None, promotion_name=None):
         self.id = id
         self.client_id  = client_id
         self.worker_id  = worker_id
@@ -32,6 +33,9 @@ class AppointmentModel:
         self.proposed_start_time = proposed_start_time
         self.proposed_end_time   = proposed_end_time
         self.reschedule_reason   = reschedule_reason
+        # Referencia a promoción (opcional)
+        self.promotion_id   = promotion_id
+        self.promotion_name = promotion_name
         self.created_at = datetime.now()
 
     @classmethod
@@ -49,7 +53,9 @@ class AppointmentModel:
             proposed_date      = data.get("proposed_date"),
             proposed_start_time= data.get("proposed_start_time"),
             proposed_end_time  = data.get("proposed_end_time"),
-            reschedule_reason  = data.get("reschedule_reason")
+            reschedule_reason  = data.get("reschedule_reason"),
+            promotion_id       = data.get("promotion_id"),
+            promotion_name     = data.get("promotion_name")
         )
         if "_id" in data:
             appt.id = str(data["_id"])
@@ -70,6 +76,8 @@ class AppointmentModel:
             "proposed_start_time":self.proposed_start_time,
             "proposed_end_time":  self.proposed_end_time,
             "reschedule_reason":  self.reschedule_reason,
+            "promotion_id":       self.promotion_id,
+            "promotion_name":     self.promotion_name,
             "created_at":         self.created_at
         }
 
