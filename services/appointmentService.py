@@ -190,10 +190,10 @@ class AppointmentService:
             return {"success": False, "message": f"Error al rechazar reagendamiento: {e}"}
 
     @staticmethod
-    def cancel_group(promotion_id: str, client_id: str) -> Dict:
-        """Cancela todas las citas activas del cliente para un combo."""
+    def cancel_group(combo_instance_id: str, client_id: str) -> Dict:
+        """Cancela todas las citas activas de una instancia específica de combo."""
         try:
-            count = AppointmentRepository.cancel_by_client_and_promotion(client_id, promotion_id)
+            count = AppointmentRepository.cancel_by_combo_instance(combo_instance_id, client_id)
             if count == 0:
                 return {"success": False, "message": "No hay citas activas para cancelar en este combo"}
             return {"success": True,
@@ -238,7 +238,8 @@ class AppointmentService:
                     "proposed_end_time":   a.proposed_end_time,
                     "reschedule_reason":   a.reschedule_reason,
                     "promotion_id":        a.promotion_id,
-                    "promotion_name":      a.promotion_name
+                    "promotion_name":      a.promotion_name,
+                    "combo_instance_id":   a.combo_instance_id
                 })
             return {"success": True, "appointments": result}
         except Exception as e:
@@ -268,8 +269,9 @@ class AppointmentService:
                                       if worker_person else "N/A"),
                     "total_price":    a.total_price,
                     "status":         a.status,
-                    "promotion_id":   a.promotion_id,
-                    "promotion_name": a.promotion_name
+                    "promotion_id":      a.promotion_id,
+                    "promotion_name":    a.promotion_name,
+                    "combo_instance_id": a.combo_instance_id
                 })
             return {"success": True, "appointments": result}
         except Exception as e:

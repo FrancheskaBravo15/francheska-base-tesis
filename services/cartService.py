@@ -120,6 +120,7 @@ class CartService:
             failed  = []
 
             # ── Combos: todo-o-nada ──────────────────────────────────────────
+            import uuid
             for promo_id, group in promo_groups.items():
                 conflicts = [
                     f"'{i.service_name}' con {i.worker_name} el {i.date} a las {i.start_time}"
@@ -134,6 +135,7 @@ class CartService:
                     )
                     continue
 
+                instance_id = uuid.uuid4().hex  # ID único para esta compra del combo
                 for item in group["items"]:
                     AR.create(AppointmentModel(
                         client_id=user_id,
@@ -144,7 +146,8 @@ class CartService:
                         end_time=item.end_time,
                         total_price=item.price,
                         promotion_id=item.promotion_id,
-                        promotion_name=item.promotion_name
+                        promotion_name=item.promotion_name,
+                        combo_instance_id=instance_id
                     ))
                 created.append(f"Combo '{group['name']}'")
 

@@ -13,23 +13,24 @@ def my_appointments():
 
     appointments = result.get("appointments", [])
 
-    # Separar citas individuales de combos
+    # Separar citas individuales de combos (agrupadas por combo_instance_id)
     promo_groups = {}
     standalone   = []
     for appt in appointments:
-        pid = appt.get("promotion_id")
-        if pid:
-            if pid not in promo_groups:
-                promo_groups[pid] = {
-                    "promotion_id":   pid,
-                    "promotion_name": appt.get("promotion_name", "Promoción"),
-                    "status":         appt["status"],
-                    "group_total":    0.0,
-                    "entries":        []
+        cid = appt.get("combo_instance_id")
+        if cid:
+            if cid not in promo_groups:
+                promo_groups[cid] = {
+                    "combo_instance_id": cid,
+                    "promotion_id":      appt.get("promotion_id"),
+                    "promotion_name":    appt.get("promotion_name", "Promoción"),
+                    "status":            appt["status"],
+                    "group_total":       0.0,
+                    "entries":           []
                 }
-            promo_groups[pid]["entries"].append(appt)
-            promo_groups[pid]["group_total"] = round(
-                promo_groups[pid]["group_total"] + appt["total_price"], 2
+            promo_groups[cid]["entries"].append(appt)
+            promo_groups[cid]["group_total"] = round(
+                promo_groups[cid]["group_total"] + appt["total_price"], 2
             )
         else:
             standalone.append(appt)
@@ -39,11 +40,11 @@ def my_appointments():
                            promo_groups=list(promo_groups.values()),
                            pending_reschedules=pending_reschedules)
 
-@appointment_bp.route('/cancel-group/<promotion_id>', methods=['POST'])
+@appointment_bp.route('/cancel-group/<combo_instance_id>', methods=['POST'])
 @login_required
-def cancel_group(promotion_id):
+def cancel_group(combo_instance_id):
     user_id = session.get("user_id")
-    result  = AppointmentService.cancel_group(promotion_id, user_id)
+    result  = AppointmentService.cancel_group(combo_instance_id, user_id)
     flash(result["message"], 'success' if result["success"] else 'danger')
     return redirect(url_for('appointments.my_appointments'))
 

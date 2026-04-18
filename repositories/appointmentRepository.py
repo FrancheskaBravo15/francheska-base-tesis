@@ -119,12 +119,12 @@ class AppointmentRepository:
             raise
 
     @classmethod
-    def cancel_by_client_and_promotion(cls, client_id: str, promotion_id: str) -> int:
-        """Cancela todas las citas activas de un cliente para un combo."""
+    def cancel_by_combo_instance(cls, combo_instance_id: str, client_id: str) -> int:
+        """Cancela todas las citas activas de una instancia específica de combo."""
         try:
             collection = cls._get_collection()
             result = collection.update_many(
-                {"client_id": client_id, "promotion_id": promotion_id,
+                {"combo_instance_id": combo_instance_id, "client_id": client_id,
                  "status": {"$nin": ["cancelada"]}},
                 {"$set": {"status": "cancelada"}}
             )

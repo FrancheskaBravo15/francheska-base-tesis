@@ -317,22 +317,21 @@ def appointments():
     promo_groups = {}
     standalone   = []
     for appt in all_appts:
-        pid = appt.get("promotion_id")
-        if pid:
-            key = f"{pid}::{appt.get('client_id', '')}"
-            if key not in promo_groups:
-                promo_groups[key] = {
-                    "group_key":      key,
-                    "promotion_id":   pid,
-                    "promotion_name": appt["promotion_name"],
-                    "client_name":    appt["client_name"],
-                    "status":         appt["status"],
-                    "group_total":    0.0,
-                    "entries":        []
+        cid = appt.get("combo_instance_id")
+        if cid:
+            if cid not in promo_groups:
+                promo_groups[cid] = {
+                    "combo_instance_id": cid,
+                    "promotion_id":      appt.get("promotion_id"),
+                    "promotion_name":    appt.get("promotion_name", "Promoción"),
+                    "client_name":       appt["client_name"],
+                    "status":            appt["status"],
+                    "group_total":       0.0,
+                    "entries":           []
                 }
-            promo_groups[key]["entries"].append(appt)
-            promo_groups[key]["group_total"] = round(
-                promo_groups[key]["group_total"] + appt["total_price"], 2
+            promo_groups[cid]["entries"].append(appt)
+            promo_groups[cid]["group_total"] = round(
+                promo_groups[cid]["group_total"] + appt["total_price"], 2
             )
         else:
             standalone.append(appt)

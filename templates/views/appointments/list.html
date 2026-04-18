@@ -62,7 +62,7 @@
                         <span class="fw-bold text-danger">${{ "%.2f"|format(group.group_total) }}</span>
                         {% if group.status in ['confirmada', 'pendiente_reagenda'] %}
                         <form method="POST"
-                              action="{{ url_for('appointments.cancel_group', promotion_id=group.promotion_id) }}"
+                              action="{{ url_for('appointments.cancel_group', combo_instance_id=group.combo_instance_id) }}"
                               onsubmit="return confirm('¿Cancelar todo el combo? No hay devolución de dinero.')">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button class="btn btn-sm btn-outline-danger">
