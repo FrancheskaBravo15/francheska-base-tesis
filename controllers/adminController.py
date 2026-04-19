@@ -413,6 +413,17 @@ def complete_appointment(appointment_id):
     return redirect(url_for('admin.appointment_detail', appointment_id=appointment_id))
 
 
+@admin_bp.route('/appointments/<appointment_id>/cancel', methods=['POST'])
+@role_required('admin')
+def cancel_appointment(appointment_id):
+    from services.appointmentService import AppointmentService
+    from flask import request
+    reason = request.form.get('cancel_reason', '')
+    result = AppointmentService.cancel_by_admin(appointment_id, reason)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('admin.appointment_detail', appointment_id=appointment_id))
+
+
 # ──────────────────────────────────────────
 # GESTIÓN DE PROMOCIONES
 # ──────────────────────────────────────────

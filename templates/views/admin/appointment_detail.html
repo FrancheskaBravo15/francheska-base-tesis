@@ -203,14 +203,6 @@
                         <i class="bi bi-check-circle me-1"></i>Validar Pago → Confirmar Cita
                     </button>
                 </form>
-                <form method="POST"
-                      action="{{ url_for('admin.reject_payment', appointment_id=appt.appointment_id) }}"
-                      onsubmit="return confirm('¿Rechazar el comprobante y cancelar la cita?')">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="btn btn-outline-danger w-100">
-                        <i class="bi bi-x-circle me-1"></i>Rechazar Pago → Cancelar
-                    </button>
-                </form>
 
                 {% elif appt.status == 'confirmada' %}
                 <!-- Iniciar cita -->
@@ -240,8 +232,56 @@
                 </p>
                 {% endif %}
 
+                {% if appt.status not in ['cancelada', 'completada'] %}
+                <hr class="my-2">
+                <button class="btn btn-outline-danger w-100"
+                        data-bs-toggle="modal" data-bs-target="#cancelModal">
+                    <i class="bi bi-x-circle me-1"></i>Cancelar Cita
+                </button>
+                {% endif %}
+
             </div>
         </div>
     </div>
 </div>
+
+<!-- Modal: Cancelar cita (admin) -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST"
+                  action="{{ url_for('admin.cancel_appointment', appointment_id=appt.appointment_id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar Cita
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        El cliente podrá ver el motivo de cancelación en el detalle de su cita.
+                        {% if appt.combo_instance_id %}
+                        <strong>Se cancelarán todos los servicios del combo.</strong>
+                        {% endif %}
+                    </p>
+                    <label class="form-label fw-semibold">
+                        Motivo de cancelación <span class="text-danger">*</span>
+                    </label>
+                    <textarea name="cancel_reason" class="form-control" rows="3"
+                              placeholder="Escribe el motivo de la cancelación..."
+                              required minlength="5"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">Volver</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-circle me-1"></i>Confirmar Cancelación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

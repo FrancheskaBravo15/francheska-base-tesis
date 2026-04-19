@@ -241,6 +241,29 @@ class AppointmentService:
             return {"success": False, "message": f"Error al cancelar combo: {e}"}
 
     @staticmethod
+    def cancel_by_admin(appointment_id: str, reason: str) -> Dict:
+        try:
+            appt = AppointmentRepository.find_by_id(appointment_id)
+            if not appt:
+                return {"success": False, "message": "Cita no encontrada"}
+            if appt.status == "cancelada":
+                return {"success": False, "message": "La cita ya está cancelada"}
+            if not reason or not reason.strip():
+                return {"success": False, "message": "Debe indicar el motivo de cancelación"}
+            if appt.combo_instance_id:
+                AppointmentRepository.cancel_by_combo_instance_admin(
+                    appt.combo_instance_id, reason.strip()
+                )
+            else:
+                AppointmentRepository.update_data(appointment_id, {
+                    "status": "cancelada",
+                    "cancel_reason": reason.strip()
+                })
+            return {"success": True, "message": "Cita cancelada por el administrador."}
+        except Exception as e:
+            return {"success": False, "message": f"Error al cancelar cita: {e}"}
+
+    @staticmethod
     def submit_review(appointment_id: str, client_id: str,
                       rating: int, comment: str) -> Dict:
         try:

@@ -152,6 +152,19 @@ class AppointmentRepository:
             raise
 
     @classmethod
+    def cancel_by_combo_instance_admin(cls, combo_instance_id: str, reason: str = "") -> int:
+        try:
+            collection = cls._get_collection()
+            result = collection.update_many(
+                {"combo_instance_id": combo_instance_id, "status": {"$nin": ["cancelada"]}},
+                {"$set": {"status": "cancelada", "cancel_reason": reason}}
+            )
+            return result.modified_count
+        except PyMongoError as e:
+            print(f"Error al cancelar combo por admin: {e}")
+            raise
+
+    @classmethod
     def cancel_by_combo_instance(cls, combo_instance_id: str, client_id: str,
                                   reason: str = "") -> int:
         try:
