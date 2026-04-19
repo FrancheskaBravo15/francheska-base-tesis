@@ -428,6 +428,7 @@ class AppointmentService:
                     "start_time":        a.start_time,
                     "end_time":          a.end_time,
                     "service_name":      service.name if service else "N/A",
+                    "service_category":  service.category if service else "N/A",
                     "client_name":       (f"{client_person.first_name} {client_person.last_name}"
                                          if client_person else "N/A"),
                     "worker_name":       (f"{worker_person.first_name} {worker_person.last_name}"

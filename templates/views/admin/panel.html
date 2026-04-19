@@ -6,14 +6,14 @@
     <h3 class="fw-bold mb-0"><i class="bi bi-speedometer2 me-2 text-danger"></i>Panel de Administración</h3>
 </div>
 
-<!-- Stats -->
-<div class="row g-3 mb-5">
-    <div class="col-sm-6 col-lg-3">
+<!-- ── KPIs ── -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-2">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle d-flex align-items-center justify-content-center"
-                     style="width:50px;height:50px;background:#fce4ec;">
-                    <i class="bi bi-people-fill text-danger" style="font-size:1.5rem;"></i>
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width:46px;height:46px;background:#fce4ec;">
+                    <i class="bi bi-people-fill text-danger fs-5"></i>
                 </div>
                 <div>
                     <div class="fs-4 fw-bold">{{ stats.total_users }}</div>
@@ -22,12 +22,12 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg-2">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle d-flex align-items-center justify-content-center"
-                     style="width:50px;height:50px;background:#e8f5e9;">
-                    <i class="bi bi-person-badge-fill text-success" style="font-size:1.5rem;"></i>
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width:46px;height:46px;background:#e8f5e9;">
+                    <i class="bi bi-person-badge-fill text-success fs-5"></i>
                 </div>
                 <div>
                     <div class="fs-4 fw-bold">{{ stats.total_workers }}</div>
@@ -36,12 +36,12 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg-2">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle d-flex align-items-center justify-content-center"
-                     style="width:50px;height:50px;background:#e3f2fd;">
-                    <i class="bi bi-scissors text-primary" style="font-size:1.5rem;"></i>
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width:46px;height:46px;background:#e3f2fd;">
+                    <i class="bi bi-scissors text-primary fs-5"></i>
                 </div>
                 <div>
                     <div class="fs-4 fw-bold">{{ stats.total_services }}</div>
@@ -50,36 +50,53 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg-2">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body d-flex align-items-center gap-3">
-                <div class="rounded-circle d-flex align-items-center justify-content-center"
-                     style="width:50px;height:50px;background:#fff8e1;">
-                    <i class="bi bi-calendar-check-fill text-warning" style="font-size:1.5rem;"></i>
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width:46px;height:46px;background:#f3e5f5;">
+                    <i class="bi bi-calendar-check-fill text-purple fs-5" style="color:#7b1fa2;"></i>
+                </div>
+                <div>
+                    <div class="fs-4 fw-bold">{{ stats.total_appts }}</div>
+                    <div class="text-muted small">Total Citas</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width:46px;height:46px;background:#fff8e1;">
+                    <i class="bi bi-hourglass-split text-warning fs-5"></i>
                 </div>
                 <div>
                     <div class="fs-4 fw-bold">{{ stats.pending_appts }}</div>
-                    <div class="text-muted small">Citas Activas</div>
+                    <div class="text-muted small">Confirmadas</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-2">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                     style="width:46px;height:46px;background:#e8f5e9;">
+                    <i class="bi bi-cash-coin text-success fs-5"></i>
+                </div>
+                <div>
+                    <div class="fw-bold text-success" style="font-size:1.1rem;">${{ "%.2f"|format(stats.total_revenue) }}</div>
+                    <div class="text-muted small">Recaudado</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Revenue -->
-<div class="card border-0 shadow-sm mb-5">
-    <div class="card-body d-flex align-items-center gap-3">
-        <i class="bi bi-cash-coin text-success" style="font-size:2rem;"></i>
-        <div>
-            <div class="text-muted small">Total Recaudado (citas completadas)</div>
-            <div class="fs-3 fw-bold text-success">${{ "%.2f"|format(stats.total_revenue) }}</div>
-        </div>
-    </div>
-</div>
-
-<!-- Acciones rápidas -->
+<!-- ── Acciones rápidas ── -->
 <h5 class="fw-bold mb-3"><i class="bi bi-lightning me-2 text-danger"></i>Acciones Rápidas</h5>
-<div class="row g-3">
+<div class="row g-3 mb-4">
     <div class="col-sm-6 col-lg-3">
         <a href="{{ url_for('admin.users') }}" class="card border-0 shadow-sm text-decoration-none text-dark h-100">
             <div class="card-body text-center py-4">
@@ -113,4 +130,319 @@
         </a>
     </div>
 </div>
+
+<!-- ── Filtro de período ── -->
+<div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
+    <span class="text-muted small fw-semibold me-1"><i class="bi bi-funnel me-1"></i>Período:</span>
+    <div class="btn-group btn-group-sm" role="group" id="periodFilter">
+        <button class="btn btn-outline-danger period-btn" data-days="7">7 días</button>
+        <button class="btn btn-outline-danger period-btn" data-days="30">30 días</button>
+        <button class="btn btn-outline-danger period-btn" data-days="90">90 días</button>
+        <button class="btn btn-outline-danger period-btn" data-days="365">1 año</button>
+        <button class="btn btn-danger period-btn active" data-days="0">Todo</button>
+    </div>
+    <span class="text-muted small ms-2" id="periodLabel"></span>
+</div>
+
+<!-- ── Fila 1: Estado de citas + Método de pago ── -->
+<div class="row g-3 mb-3">
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger small"><i class="bi bi-pie-chart-fill me-1"></i>Estado de Citas</span>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center" style="min-height:260px;">
+                <canvas id="chartStatus" style="max-height:240px;"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger small"><i class="bi bi-credit-card me-1"></i>Método de Pago</span>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center" style="min-height:260px;">
+                <canvas id="chartPayment" style="max-height:240px;"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger small"><i class="bi bi-bar-chart-fill me-1"></i>Resumen del Período</span>
+            </div>
+            <div class="card-body small" id="summaryBox" style="min-height:260px;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Fila 2: Citas por mes + Ingresos por mes ── -->
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger small"><i class="bi bi-calendar3 me-1"></i>Citas por Mes</span>
+            </div>
+            <div class="card-body" style="height:260px;">
+                <canvas id="chartMonthly"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger small"><i class="bi bi-graph-up-arrow me-1"></i>Ingresos por Mes (completadas)</span>
+            </div>
+            <div class="card-body" style="height:260px;">
+                <canvas id="chartRevenue"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Fila 3: Por categoría + Por trabajadora ── -->
+<div class="row g-3 mb-5">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger small"><i class="bi bi-tag me-1"></i>Citas por Categoría</span>
+            </div>
+            <div class="card-body" style="height:280px;">
+                <canvas id="chartCategory"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger small"><i class="bi bi-person-badge me-1"></i>Citas por Trabajadora</span>
+            </div>
+            <div class="card-body" style="height:280px;">
+                <canvas id="chartWorker"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ALL_DATA = {{ chart_data | safe }};
+
+const STATUS_LABELS = {
+    confirmada:           'Confirmada',
+    completada:           'Completada',
+    cancelada:            'Cancelada',
+    en_curso:             'En Curso',
+    pendiente_validacion: 'Pend. Validación',
+    pendiente_reagenda:   'Pend. Reagenda',
+};
+const STATUS_COLORS = {
+    confirmada:           '#4caf50',
+    completada:           '#9e9e9e',
+    cancelada:            '#f44336',
+    en_curso:             '#2196f3',
+    pendiente_validacion: '#ff9800',
+    pendiente_reagenda:   '#ffc107',
+};
+const PAYMENT_COLORS = { payphone: '#ffc107', voucher: '#4caf50', otro: '#9e9e9e' };
+const MONTH_NAMES    = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const PALETTE        = ['#c2185b','#e91e63','#f06292','#ad1457','#880e4f',
+                        '#7b1fa2','#9c27b0','#ce93d8','#4a148c','#6a1b9a',
+                        '#1565c0','#1976d2','#42a5f5','#0d47a1','#0288d1'];
+
+// ── helpers ─────────────────────────────────────────────────────────────────
+function filterData(days) {
+    if (!days) return ALL_DATA;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    return ALL_DATA.filter(r => new Date(r.date) >= cutoff);
+}
+
+function countBy(data, key) {
+    return data.reduce((acc, r) => { acc[r[key]] = (acc[r[key]] || 0) + 1; return acc; }, {});
+}
+
+function sumBy(data, key, valueKey) {
+    return data.reduce((acc, r) => { acc[r[key]] = (acc[r[key]] || 0) + r[valueKey]; return acc; }, {});
+}
+
+function last12Months() {
+    const months = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+    }
+    return months;
+}
+
+function monthLabel(ym) {
+    const [y, m] = ym.split('-');
+    return `${MONTH_NAMES[parseInt(m)-1]} ${y}`;
+}
+
+// ── chart instances ──────────────────────────────────────────────────────────
+let charts = {};
+
+function destroyAll() {
+    Object.values(charts).forEach(c => c.destroy());
+    charts = {};
+}
+
+function buildCharts(days) {
+    destroyAll();
+    const data = filterData(days);
+
+    // 1. Estado (donut)
+    const statusCounts = countBy(data, 'status');
+    const sKeys   = Object.keys(statusCounts);
+    charts.status = new Chart(document.getElementById('chartStatus'), {
+        type: 'doughnut',
+        data: {
+            labels: sKeys.map(k => STATUS_LABELS[k] || k),
+            datasets: [{ data: sKeys.map(k => statusCounts[k]),
+                         backgroundColor: sKeys.map(k => STATUS_COLORS[k] || '#9e9e9e'),
+                         borderWidth: 2 }]
+        },
+        options: { plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+                   cutout: '60%' }
+    });
+
+    // 2. Método de pago (pie)
+    const pmCounts  = countBy(data, 'payment');
+    const pmKeys    = Object.keys(pmCounts);
+    const pmLabels  = { payphone: 'Payphone', voucher: 'Comprobante', otro: 'Otro' };
+    charts.payment  = new Chart(document.getElementById('chartPayment'), {
+        type: 'pie',
+        data: {
+            labels: pmKeys.map(k => pmLabels[k] || k),
+            datasets: [{ data: pmKeys.map(k => pmCounts[k]),
+                         backgroundColor: pmKeys.map(k => PAYMENT_COLORS[k] || '#9e9e9e'),
+                         borderWidth: 2 }]
+        },
+        options: { plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+    });
+
+    // 3. Resumen
+    const totalAppts    = data.length;
+    const completadas   = data.filter(r => r.status === 'completada').length;
+    const canceladas    = data.filter(r => r.status === 'cancelada').length;
+    const ingresos      = data.reduce((s, r) => s + r.price, 0);
+    const tasa          = totalAppts ? Math.round(completadas / totalAppts * 100) : 0;
+    document.getElementById('summaryBox').innerHTML = `
+        <div class="d-flex flex-column gap-3 pt-1">
+            <div class="d-flex justify-content-between border-bottom pb-2">
+                <span class="text-muted">Total citas</span>
+                <span class="fw-bold">${totalAppts}</span>
+            </div>
+            <div class="d-flex justify-content-between border-bottom pb-2">
+                <span class="text-muted">Completadas</span>
+                <span class="fw-bold text-secondary">${completadas}</span>
+            </div>
+            <div class="d-flex justify-content-between border-bottom pb-2">
+                <span class="text-muted">Canceladas</span>
+                <span class="fw-bold text-danger">${canceladas}</span>
+            </div>
+            <div class="d-flex justify-content-between border-bottom pb-2">
+                <span class="text-muted">Ingresos</span>
+                <span class="fw-bold text-success">$${ingresos.toFixed(2)}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span class="text-muted">Tasa compl.</span>
+                <span class="fw-bold">${tasa}%</span>
+            </div>
+        </div>`;
+
+    // 4. Citas por mes (bar)
+    const months    = last12Months();
+    const mCounts   = {};
+    data.forEach(r => { const ym = r.date.slice(0,7); mCounts[ym] = (mCounts[ym]||0) + 1; });
+    charts.monthly  = new Chart(document.getElementById('chartMonthly'), {
+        type: 'bar',
+        data: {
+            labels: months.map(monthLabel),
+            datasets: [{ label: 'Citas', data: months.map(m => mCounts[m] || 0),
+                         backgroundColor: '#f06292', borderRadius: 4 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+                   plugins: { legend: { display: false } },
+                   scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+
+    // 5. Ingresos por mes (line)
+    const mRevenue  = {};
+    data.filter(r => r.price > 0).forEach(r => {
+        const ym = r.date.slice(0,7); mRevenue[ym] = (mRevenue[ym]||0) + r.price;
+    });
+    charts.revenue  = new Chart(document.getElementById('chartRevenue'), {
+        type: 'line',
+        data: {
+            labels: months.map(monthLabel),
+            datasets: [{ label: 'Ingresos ($)', data: months.map(m => +(mRevenue[m]||0).toFixed(2)),
+                         borderColor: '#c2185b', backgroundColor: 'rgba(194,24,91,.1)',
+                         fill: true, tension: 0.4, pointRadius: 4 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false,
+                   plugins: { legend: { display: false } },
+                   scales: { y: { beginAtZero: true } } }
+    });
+
+    // 6. Por categoría (bar horizontal)
+    const catCounts = countBy(data, 'category');
+    const catKeys   = Object.keys(catCounts).sort((a,b) => catCounts[b]-catCounts[a]);
+    charts.category = new Chart(document.getElementById('chartCategory'), {
+        type: 'bar',
+        data: {
+            labels: catKeys,
+            datasets: [{ label: 'Citas', data: catKeys.map(k => catCounts[k]),
+                         backgroundColor: catKeys.map((_,i) => PALETTE[i % PALETTE.length]),
+                         borderRadius: 4 }]
+        },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                   plugins: { legend: { display: false } },
+                   scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+
+    // 7. Por trabajadora (bar horizontal)
+    const wkCounts  = countBy(data, 'worker');
+    const wkKeys    = Object.keys(wkCounts).sort((a,b) => wkCounts[b]-wkCounts[a]);
+    charts.worker   = new Chart(document.getElementById('chartWorker'), {
+        type: 'bar',
+        data: {
+            labels: wkKeys,
+            datasets: [{ label: 'Citas', data: wkKeys.map(k => wkCounts[k]),
+                         backgroundColor: wkKeys.map((_,i) => PALETTE[(i+5) % PALETTE.length]),
+                         borderRadius: 4 }]
+        },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                   plugins: { legend: { display: false } },
+                   scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+}
+
+// ── periodo activo ────────────────────────────────────────────────────────────
+let activeDays = 0;
+
+document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.period-btn').forEach(b => {
+            b.classList.remove('btn-danger','active');
+            b.classList.add('btn-outline-danger');
+        });
+        btn.classList.remove('btn-outline-danger');
+        btn.classList.add('btn-danger','active');
+        activeDays = parseInt(btn.dataset.days);
+        const lbl = activeDays ? `Mostrando últimos ${activeDays} días` : 'Mostrando todos los datos';
+        document.getElementById('periodLabel').textContent = lbl;
+        buildCharts(activeDays);
+    });
+});
+
+buildCharts(0);
+</script>
 {% endblock %}

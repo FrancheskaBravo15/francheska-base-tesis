@@ -23,20 +23,48 @@ def _upload_folder_categories(app):
 @admin_bp.route('/', methods=['GET'])
 @role_required('admin')
 def panel():
-    users_result  = UserService.get_all_users_with_persons()
-    appts_result  = AppointmentService.get_all_appointments()
-    workers_result = WorkerService.get_all_workers()
+    import json
+    from collections import defaultdict
+    from datetime import datetime, date
+
+    users_result    = UserService.get_all_users_with_persons()
+    appts_result    = AppointmentService.get_all_appointments()
+    workers_result  = WorkerService.get_all_workers()
     services_result = ServiceService.get_all_services()
+
+    appointments = appts_result.get("appointments", [])
 
     stats = {
         "total_users":    len(users_result.get("users", [])),
         "total_workers":  len(workers_result.get("workers", [])),
         "total_services": len(services_result.get("services", [])),
-        "total_appts":    len(appts_result.get("appointments", [])),
-        "pending_appts":  sum(1 for a in appts_result.get("appointments", []) if a["status"] == "confirmada"),
-        "total_revenue":  sum(a["total_price"] for a in appts_result.get("appointments", []) if a["status"] == "completada")
+        "total_appts":    len(appointments),
+        "pending_appts":  sum(1 for a in appointments if a["status"] == "confirmada"),
+        "total_revenue":  sum(a["total_price"] for a in appointments if a["status"] == "completada"),
     }
-    return render_template('/views/admin/panel.html', stats=stats)
+
+    # ── Datos crudos para Chart.js (JS filtrará por período) ──────────────────
+    chart_rows = []
+    for a in appointments:
+        dt = a.get("created_at")
+        if dt is None:
+            continue
+        if hasattr(dt, "strftime"):
+            date_str = dt.strftime("%Y-%m-%d")
+        else:
+            date_str = str(dt)[:10]
+        chart_rows.append({
+            "date":     date_str,
+            "status":   a["status"],
+            "payment":  a.get("payment_method") or "otro",
+            "price":    float(a["total_price"]) if a["status"] == "completada" else 0,
+            "category": a.get("service_category") or "N/A",
+            "worker":   a.get("worker_name") or "N/A",
+        })
+
+    return render_template('/views/admin/panel.html',
+                           stats=stats,
+                           chart_data=json.dumps(chart_rows, ensure_ascii=False))
 
 
 # ──────────────────────────────────────────
