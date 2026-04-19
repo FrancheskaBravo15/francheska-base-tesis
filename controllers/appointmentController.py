@@ -4,6 +4,19 @@ from services.appointmentService import AppointmentService
 
 appointment_bp = Blueprint('appointments', __name__, url_prefix='/appointments')
 
+
+@appointment_bp.route('/<appointment_id>/detail', methods=['GET'])
+@login_required
+def detail(appointment_id):
+    user_id = session.get("user_id")
+    result  = AppointmentService.get_appointment_detail(appointment_id, user_id=user_id)
+    if not result["success"]:
+        flash(result["message"], "danger")
+        return redirect(url_for('appointments.my_appointments'))
+    return render_template('/views/appointments/detail.html',
+                           appt=result["appointment"],
+                           siblings=result.get("siblings", []))
+
 @appointment_bp.route('/', methods=['GET'])
 @login_required
 def my_appointments():
@@ -61,7 +74,8 @@ def my_appointments():
 @login_required
 def cancel_group(combo_instance_id):
     user_id = session.get("user_id")
-    result  = AppointmentService.cancel_group(combo_instance_id, user_id)
+    reason  = request.form.get('cancel_reason', '')
+    result  = AppointmentService.cancel_group(combo_instance_id, user_id, reason=reason)
     flash(result["message"], 'success' if result["success"] else 'danger')
     return redirect(url_for('appointments.my_appointments'))
 
@@ -69,9 +83,20 @@ def cancel_group(combo_instance_id):
 @login_required
 def cancel(appointment_id):
     user_id = session.get("user_id")
-    result  = AppointmentService.cancel_appointment(appointment_id, user_id)
+    reason  = request.form.get('cancel_reason', '')
+    result  = AppointmentService.cancel_appointment(appointment_id, user_id, reason=reason)
     flash(result["message"], 'success' if result["success"] else 'danger')
     return redirect(url_for('appointments.my_appointments'))
+
+@appointment_bp.route('/<appointment_id>/review', methods=['POST'])
+@login_required
+def submit_review(appointment_id):
+    user_id = session.get("user_id")
+    rating  = request.form.get('rating', 0)
+    comment = request.form.get('review_comment', '')
+    result  = AppointmentService.submit_review(appointment_id, user_id, rating, comment)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('appointments.detail', appointment_id=appointment_id))
 
 @appointment_bp.route('/<appointment_id>/accept-reschedule', methods=['POST'])
 @login_required

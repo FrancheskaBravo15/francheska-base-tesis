@@ -24,6 +24,7 @@
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
     <div class="d-flex gap-2 flex-wrap">
         <button class="btn btn-sm btn-danger filter-btn active" data-filter="all">Todas</button>
+        <button class="btn btn-sm btn-outline-warning filter-btn" data-filter="pendiente_validacion">Pendiente Validación</button>
         <button class="btn btn-sm btn-outline-success filter-btn" data-filter="confirmada">Confirmadas</button>
         <button class="btn btn-sm btn-outline-warning filter-btn" data-filter="pendiente_reagenda">
             Reagendamiento
@@ -44,6 +45,73 @@
     </div>
 </div>
 
+<!-- Modal: Cancelar cita -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="cancelForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger" id="cancelModalLabel">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar Cita
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Esta acción es irreversible. No se realizan devoluciones.</p>
+                    <label class="form-label fw-semibold">Motivo de cancelación <span class="text-danger">*</span></label>
+                    <textarea name="cancel_reason" class="form-control" rows="3"
+                              placeholder="Escribe el motivo de la cancelación..."
+                              required minlength="5"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Volver</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-circle me-1"></i>Confirmar Cancelación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Calificar cita -->
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="reviewForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title text-warning" id="reviewModalLabel">
+                        <i class="bi bi-star-fill me-2"></i>Calificar mi experiencia
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3" id="reviewServiceName"></p>
+                    <label class="form-label fw-semibold">Puntuación <span class="text-danger">*</span></label>
+                    <div class="d-flex gap-2 mb-3" id="starSelector">
+                        {% for i in range(1,6) %}
+                        <i class="bi bi-star fs-3 text-warning star-btn" data-value="{{ i }}"
+                           style="cursor:pointer;"></i>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="rating" id="ratingInput" required>
+                    <label class="form-label fw-semibold">Comentario (opcional)</label>
+                    <textarea name="review_comment" class="form-control" rows="3"
+                              placeholder="Cuéntanos cómo fue tu experiencia..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-warning text-dark">
+                        <i class="bi bi-star me-1"></i>Enviar Calificación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% if rows %}
 <div class="row g-3" id="appointmentsList">
 
@@ -61,8 +129,12 @@
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-tag-fill text-danger"></i>
                         <span class="fw-bold text-danger">COMBO: {{ row.promotion_name }}</span>
-                        {% if row.status == 'confirmada' %}
+                        {% if row.status == 'pendiente_validacion' %}
+                            <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Pendiente Validación</span>
+                        {% elif row.status == 'confirmada' %}
                             <span class="badge bg-success">Confirmada</span>
+                        {% elif row.status == 'en_curso' %}
+                            <span class="badge bg-primary"><i class="bi bi-play-circle me-1"></i>En Curso</span>
                         {% elif row.status == 'pendiente_reagenda' %}
                             <span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i>Reagendamiento</span>
                         {% elif row.status == 'completada' %}
@@ -73,15 +145,27 @@
                     </div>
                     <div class="d-flex align-items-center gap-3">
                         <span class="fw-bold text-danger">${{ "%.2f"|format(row.group_total) }}</span>
+                        <a href="{{ url_for('appointments.detail', appointment_id=row.entries[0].appointment_id) }}"
+                           class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-eye me-1"></i>Detalle
+                        </a>
                         {% if row.status in ['confirmada', 'pendiente_reagenda'] %}
-                        <form method="POST"
-                              action="{{ url_for('appointments.cancel_group', combo_instance_id=row.combo_instance_id) }}"
-                              onsubmit="return confirm('¿Cancelar todo el combo? No hay devolución de dinero.')">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button class="btn btn-sm btn-outline-danger">
-                                <i class="bi bi-x-circle me-1"></i>Cancelar Combo
-                            </button>
-                        </form>
+                        <button class="btn btn-sm btn-outline-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#cancelModal"
+                                data-action="{{ url_for('appointments.cancel_group', combo_instance_id=row.combo_instance_id) }}"
+                                data-label="Cancelar Combo">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar Combo
+                        </button>
+                        {% endif %}
+                        {% if row.status == 'completada' and row.entries[0].rating is none %}
+                        <button class="btn btn-sm btn-outline-warning"
+                                data-bs-toggle="modal"
+                                data-bs-target="#reviewModal"
+                                data-action="{{ url_for('appointments.submit_review', appointment_id=row.entries[0].appointment_id) }}"
+                                data-service="{{ row.promotion_name }}">
+                            <i class="bi bi-star me-1"></i>Calificar
+                        </button>
                         {% endif %}
                     </div>
                 </div>
@@ -146,8 +230,16 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <h6 class="fw-bold mb-0">{{ row.service_name }}</h6>
-                    {% if row.status == 'confirmada' %}
+                    {% if row.status == 'pendiente_validacion' %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-hourglass-split me-1"></i>Pendiente Validación
+                        </span>
+                    {% elif row.status == 'confirmada' %}
                         <span class="badge bg-success">Confirmada</span>
+                    {% elif row.status == 'en_curso' %}
+                        <span class="badge bg-primary">
+                            <i class="bi bi-play-circle me-1"></i>En Curso
+                        </span>
                     {% elif row.status == 'pendiente_reagenda' %}
                         <span class="badge bg-warning text-dark">
                             <i class="bi bi-clock-history me-1"></i>Reagendamiento propuesto
@@ -197,16 +289,30 @@
 
                 <div class="d-flex justify-content-between align-items-center">
                     <span class="fw-bold text-danger">${{ "%.2f"|format(row.total_price) }}</span>
+                    <div class="d-flex gap-2 align-items-center">
+                    <a href="{{ url_for('appointments.detail', appointment_id=row.appointment_id) }}"
+                       class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-eye me-1"></i>Detalle
+                    </a>
                     {% if row.status in ['confirmada', 'pendiente_reagenda'] %}
-                    <form method="POST"
-                          action="{{ url_for('appointments.cancel', appointment_id=row.appointment_id) }}"
-                          onsubmit="return confirm('¿Cancelar esta cita? No hay devolución de dinero.')">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button class="btn btn-sm btn-outline-danger">
-                            <i class="bi bi-x-circle me-1"></i>Cancelar
-                        </button>
-                    </form>
+                    <button class="btn btn-sm btn-outline-danger"
+                            data-bs-toggle="modal"
+                            data-bs-target="#cancelModal"
+                            data-action="{{ url_for('appointments.cancel', appointment_id=row.appointment_id) }}"
+                            data-label="Cancelar Cita">
+                        <i class="bi bi-x-circle me-1"></i>Cancelar
+                    </button>
                     {% endif %}
+                    {% if row.status == 'completada' and row.rating is none %}
+                    <button class="btn btn-sm btn-outline-warning"
+                            data-bs-toggle="modal"
+                            data-bs-target="#reviewModal"
+                            data-action="{{ url_for('appointments.submit_review', appointment_id=row.appointment_id) }}"
+                            data-service="{{ row.service_name }}">
+                        <i class="bi bi-star me-1"></i>Calificar
+                    </button>
+                    {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -262,6 +368,39 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
         const filter = btn.dataset.filter;
         document.querySelectorAll('.appt-card').forEach(card => {
             card.style.display = (filter === 'all' || card.dataset.status === filter) ? '' : 'none';
+        });
+    });
+});
+
+// Cancel modal
+const cancelModal = document.getElementById('cancelModal');
+cancelModal?.addEventListener('show.bs.modal', e => {
+    const btn = e.relatedTarget;
+    document.getElementById('cancelForm').action = btn.dataset.action;
+    cancelModal.querySelector('textarea[name="cancel_reason"]').value = '';
+});
+
+// Review modal
+const reviewModal = document.getElementById('reviewModal');
+reviewModal?.addEventListener('show.bs.modal', e => {
+    const btn = e.relatedTarget;
+    document.getElementById('reviewForm').action = btn.dataset.action;
+    document.getElementById('reviewServiceName').textContent = btn.dataset.service || '';
+    document.getElementById('ratingInput').value = '';
+    document.querySelectorAll('.star-btn').forEach(s => {
+        s.classList.remove('bi-star-fill');
+        s.classList.add('bi-star');
+    });
+});
+
+document.querySelectorAll('.star-btn').forEach(star => {
+    star.addEventListener('click', () => {
+        const val = parseInt(star.dataset.value);
+        document.getElementById('ratingInput').value = val;
+        document.querySelectorAll('.star-btn').forEach(s => {
+            const sv = parseInt(s.dataset.value);
+            s.classList.toggle('bi-star-fill', sv <= val);
+            s.classList.toggle('bi-star', sv > val);
         });
     });
 });

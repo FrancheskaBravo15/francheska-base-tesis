@@ -88,30 +88,34 @@ class CartService:
             return {"success": False, "message": f"Error al eliminar del carrito: {e}"}
 
     @staticmethod
-    def checkout(user_id: str) -> Dict:
+    def checkout(user_id: str, payment_method: str = None,
+                 voucher_path: str = None,
+                 payphone_client_tx_id: str = None,
+                 payphone_transaction_id: int = None,
+                 payphone_auth_code: str = None) -> Dict:
         """
-        Convierte los ítems del carrito en citas confirmadas.
-        - Combos: verifica TODOS los conflictos antes de crear cualquiera (todo-o-nada).
-        - Individuales: crea cada uno independientemente.
+        Convierte los ítems del carrito en citas.
+        payment_method='voucher'  → status 'pendiente_validacion'
+        payment_method='payphone' → status 'confirmada'
+        payment_method=None       → status 'confirmada' (flujo directo/legacy)
+        Combos: todo-o-nada.
         """
         from models.appointmentModel import AppointmentModel
         from repositories.appointmentRepository import AppointmentRepository as AR
+
+        initial_status = "pendiente_validacion" if payment_method == "voucher" else "confirmada"
 
         try:
             cart = CartRepository.find_by_user_id(user_id)
             if not cart or not cart.items:
                 return {"success": False, "message": "El carrito está vacío"}
 
-            # Separar combos de individuales
             promo_groups     = {}
             standalone_items = []
             for item in cart.items:
                 if item.promotion_id:
                     if item.promotion_id not in promo_groups:
-                        promo_groups[item.promotion_id] = {
-                            "name":  item.promotion_name,
-                            "items": []
-                        }
+                        promo_groups[item.promotion_id] = {"name": item.promotion_name, "items": []}
                     promo_groups[item.promotion_id]["items"].append(item)
                 else:
                     standalone_items.append(item)
@@ -119,7 +123,6 @@ class CartService:
             created = []
             failed  = []
 
-            # ── Combos: todo-o-nada ──────────────────────────────────────────
             import uuid
             for promo_id, group in promo_groups.items():
                 conflicts = [
@@ -130,12 +133,11 @@ class CartService:
                 if conflicts:
                     failed.append(
                         f"Combo '{group['name']}' no confirmado: "
-                        + "; ".join(conflicts)
-                        + " ya no está disponible"
+                        + "; ".join(conflicts) + " ya no está disponible"
                     )
                     continue
 
-                instance_id = uuid.uuid4().hex  # ID único para esta compra del combo
+                instance_id = uuid.uuid4().hex
                 for item in group["items"]:
                     AR.create(AppointmentModel(
                         client_id=user_id,
@@ -145,13 +147,18 @@ class CartService:
                         start_time=item.start_time,
                         end_time=item.end_time,
                         total_price=item.price,
+                        status=initial_status,
                         promotion_id=item.promotion_id,
                         promotion_name=item.promotion_name,
-                        combo_instance_id=instance_id
+                        combo_instance_id=instance_id,
+                        payment_method=payment_method,
+                        voucher_path=voucher_path,
+                        payphone_client_tx_id=payphone_client_tx_id,
+                        payphone_transaction_id=payphone_transaction_id,
+                        payphone_auth_code=payphone_auth_code,
                     ))
                 created.append(f"Combo '{group['name']}'")
 
-            # ── Individuales ─────────────────────────────────────────────────
             for item in standalone_items:
                 if AR.has_conflict(item.worker_id, item.date, item.start_time, item.end_time):
                     failed.append(
@@ -166,18 +173,24 @@ class CartService:
                     date=item.date,
                     start_time=item.start_time,
                     end_time=item.end_time,
-                    total_price=item.price
+                    total_price=item.price,
+                    status=initial_status,
+                    payment_method=payment_method,
+                    voucher_path=voucher_path,
+                    payphone_client_tx_id=payphone_client_tx_id,
+                    payphone_transaction_id=payphone_transaction_id,
+                    payphone_auth_code=payphone_auth_code,
                 ))
                 created.append(item.service_name)
 
             if failed and not created:
-                return {"success": False, "message": "No se pudo confirmar ninguna cita: " + "; ".join(failed)}
+                return {"success": False, "message": "No se pudo reservar ninguna cita: " + "; ".join(failed)}
 
             CartRepository.clear(user_id)
 
-            msg = f"{len(created)} elemento(s) confirmado(s)."
+            msg = f"{len(created)} elemento(s) reservado(s)."
             if failed:
-                msg += " No se pudo confirmar: " + "; ".join(failed)
+                msg += " No se pudo reservar: " + "; ".join(failed)
 
             return {"success": True, "message": msg, "created": created, "failed": failed}
         except Exception as e:

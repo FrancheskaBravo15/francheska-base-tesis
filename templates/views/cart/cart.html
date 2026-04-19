@@ -85,7 +85,6 @@
         </div>
         {% endfor %}
 
-        <!-- Vaciar carrito -->
         <form method="POST" action="{{ url_for('cart.clear') }}"
               onsubmit="return confirm('¿Vaciar todo el carrito?')">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -95,20 +94,19 @@
         </form>
     </div>
 
+    <!-- ── RESUMEN ── -->
     <div class="col-lg-4">
         <div class="card border-0 shadow-sm">
             <div class="card-header" style="background-color:#c2185b;">
-                <h6 class="mb-0 text-white"><i class="bi bi-receipt me-2"></i>Resumen</h6>
+                <h6 class="mb-0 text-white"><i class="bi bi-receipt me-2"></i>Resumen del Pedido</h6>
             </div>
             <div class="card-body">
-                {% if promo_groups %}
                 {% for group in promo_groups %}
                 <div class="d-flex justify-content-between mb-1 small">
                     <span class="text-muted"><i class="bi bi-tag-fill text-danger me-1"></i>{{ group.promotion_name }}</span>
                     <span>${{ "%.2f"|format(group.group_total) }}</span>
                 </div>
                 {% endfor %}
-                {% endif %}
                 {% if standalone_items %}
                 <div class="d-flex justify-content-between mb-1 small">
                     <span class="text-muted">Servicios individuales ({{ standalone_items|length }})</span>
@@ -116,30 +114,76 @@
                 </div>
                 {% endif %}
                 <hr>
-                <div class="d-flex justify-content-between mb-3">
+                <div class="d-flex justify-content-between mb-4">
                     <span class="fw-bold">Total</span>
                     <span class="fw-bold text-danger fs-5">${{ "%.2f"|format(total) }}</span>
                 </div>
 
-                <div class="alert alert-warning small mb-3">
+                <p class="text-muted small mb-2 fw-semibold">
+                    <i class="bi bi-credit-card me-1"></i>Selecciona tu método de pago:
+                </p>
+
+                <!-- Botón Comprobante -->
+                <button type="button" class="btn btn-outline-danger w-100 mb-2"
+                        data-bs-toggle="modal" data-bs-target="#voucherModal">
+                    <i class="bi bi-upload me-2"></i>Pagar con Comprobante
+                </button>
+
+                <!-- Botón Payphone -->
+                <a href="{{ url_for('cart.checkout_payphone') }}" class="btn btn-danger w-100">
+                    <i class="bi bi-phone me-2"></i>Pagar con Payphone
+                </a>
+
+                <div class="alert alert-warning small mt-3 mb-0">
                     <i class="bi bi-exclamation-triangle me-1"></i>
                     Las citas canceladas <strong>no tienen devolución</strong>.
                 </div>
-
-                <form method="POST" action="{{ url_for('cart.checkout') }}"
-                      onsubmit="return confirm('¿Confirmar todas las citas del carrito? No hay devolución.')">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-danger w-100 btn-lg">
-                        <i class="bi bi-check-circle me-2"></i>Confirmar Citas
-                    </button>
-                </form>
-                <p class="text-muted text-center small mt-2 mb-0">
-                    <i class="bi bi-lock me-1"></i>Pago seguro con Payphone
-                </p>
             </div>
         </div>
     </div>
 </div>
+
+<!-- ── Modal Comprobante ── -->
+<div class="modal fade" id="voucherModal" tabindex="-1" aria-labelledby="voucherModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#fce4ec;">
+                <h5 class="modal-title fw-bold text-danger" id="voucherModalLabel">
+                    <i class="bi bi-upload me-2"></i>Subir Comprobante de Pago
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('cart.checkout_voucher') }}"
+                  enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Realiza tu transferencia o depósito y sube la foto o PDF del comprobante.
+                        El administrador lo revisará y confirmará tu cita.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Comprobante <span class="text-danger">*</span></label>
+                        <input type="file" name="voucher" class="form-control"
+                               accept=".png,.jpg,.jpeg,.gif,.webp" required>
+                        <div class="form-text">Formatos: PNG, JPG, JPEG, GIF, WEBP</div>
+                    </div>
+                    <div class="alert alert-info small mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Tu cita quedará en estado <strong>"Pendiente de Validación"</strong> hasta
+                        que el administrador apruebe el pago.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-send me-1"></i>Enviar Comprobante
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% else %}
 <div class="text-center py-5 text-muted">
     <i class="bi bi-cart-x" style="font-size:4rem;"></i>

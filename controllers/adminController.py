@@ -347,15 +347,70 @@ def appointments():
         g["sort_key"]       = max(e["created_at"] for e in g["entries"] if e["created_at"])
         g["sort_order_str"] = _dt_str(g["sort_key"])
         g["sort_appt_str"]  = min(f"{e['date']} {e['start_time']}" for e in g["entries"])
+        g["detail_id"]      = g["entries"][0]["appointment_id"]
         rows.append(g)
     for a in standalone:
         a["sort_key"]       = a["created_at"]
         a["sort_order_str"] = _dt_str(a["created_at"])
         a["sort_appt_str"]  = f"{a['date']} {a['start_time']}"
+        a["detail_id"]      = a["appointment_id"]
         rows.append(a)
     rows.sort(key=lambda x: x["sort_key"], reverse=True)
 
-    return render_template('/views/admin/appointments.html', rows=rows)
+    from repositories.appointmentRepository import AppointmentRepository
+    pending_count = AppointmentRepository.count_pending_validation()
+
+    return render_template('/views/admin/appointments.html',
+                           rows=rows, pending_count=pending_count)
+
+
+@admin_bp.route('/appointments/detail/<appointment_id>', methods=['GET'])
+@role_required('admin')
+def appointment_detail(appointment_id):
+    from services.appointmentService import AppointmentService
+    result = AppointmentService.get_appointment_detail(appointment_id, is_admin=True)
+    if not result["success"]:
+        flash(result["message"], "danger")
+        return redirect(url_for('admin.appointments'))
+    return render_template('/views/admin/appointment_detail.html',
+                           appt=result["appointment"],
+                           siblings=result.get("siblings", []))
+
+
+@admin_bp.route('/appointments/<appointment_id>/validate', methods=['POST'])
+@role_required('admin')
+def validate_payment(appointment_id):
+    from services.appointmentService import AppointmentService
+    result = AppointmentService.validate_payment(appointment_id)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('admin.appointment_detail', appointment_id=appointment_id))
+
+
+@admin_bp.route('/appointments/<appointment_id>/reject', methods=['POST'])
+@role_required('admin')
+def reject_payment(appointment_id):
+    from services.appointmentService import AppointmentService
+    result = AppointmentService.reject_payment(appointment_id)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('admin.appointments'))
+
+
+@admin_bp.route('/appointments/<appointment_id>/start', methods=['POST'])
+@role_required('admin')
+def start_appointment(appointment_id):
+    from services.appointmentService import AppointmentService
+    result = AppointmentService.start_appointment(appointment_id)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('admin.appointment_detail', appointment_id=appointment_id))
+
+
+@admin_bp.route('/appointments/<appointment_id>/complete', methods=['POST'])
+@role_required('admin')
+def complete_appointment(appointment_id):
+    from services.appointmentService import AppointmentService
+    result = AppointmentService.complete_appointment(appointment_id)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('admin.appointment_detail', appointment_id=appointment_id))
 
 
 # ──────────────────────────────────────────

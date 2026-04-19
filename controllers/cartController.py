@@ -1,4 +1,6 @@
-from flask import render_template, request, redirect, url_for, Blueprint, flash, session, jsonify
+import os, uuid
+from flask import (render_template, request, redirect, url_for,
+                   Blueprint, flash, session, jsonify, current_app)
 from utils.authDecorator import login_required
 from services.cartService import CartService
 
@@ -13,7 +15,6 @@ def view_cart():
     items   = result.get("items", [])
     total   = result.get("total", 0)
 
-    # Agrupar ítems para visualización
     promo_groups  = {}
     standalone    = []
 
@@ -34,11 +35,17 @@ def view_cart():
         else:
             standalone.append({"index": idx, "item": item})
 
+    # Generar clientTransactionId para Payphone (se guarda en sesión en /checkout/payphone)
+    payphone_token    = os.getenv('PAYPHONE_TOKEN', '')
+    payphone_store_id = os.getenv('PAYPHONE_STORE_ID', '')
+
     return render_template('/views/cart/cart.html',
                            items=items,
                            total=total,
                            promo_groups=list(promo_groups.values()),
-                           standalone_items=standalone)
+                           standalone_items=standalone,
+                           payphone_token=payphone_token,
+                           payphone_store_id=payphone_store_id)
 
 
 @cart_bp.route('/add', methods=['POST'])
@@ -91,9 +98,68 @@ def remove_promotion(promotion_id):
     return redirect(url_for('cart.view_cart'))
 
 
+@cart_bp.route('/checkout/voucher', methods=['POST'])
+@login_required
+def checkout_voucher():
+    """Checkout con comprobante de pago."""
+    user_id = session.get("user_id")
+    voucher = request.files.get('voucher')
+
+    if not voucher or not voucher.filename:
+        flash("Debes subir un comprobante de pago.", "danger")
+        return redirect(url_for('cart.view_cart'))
+
+    allowed = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    ext = voucher.filename.rsplit('.', 1)[-1].lower() if '.' in voucher.filename else ''
+    if ext not in allowed:
+        flash("Formato no permitido. Usa PNG, JPG, JPEG, GIF o WEBP.", "danger")
+        return redirect(url_for('cart.view_cart'))
+
+    folder   = os.path.join(current_app.static_folder, 'img', 'vouchers')
+    os.makedirs(folder, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    voucher.save(os.path.join(folder, filename))
+
+    result = CartService.checkout(
+        user_id=user_id,
+        payment_method='voucher',
+        voucher_path=f"img/vouchers/{filename}"
+    )
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    if result["success"]:
+        return redirect(url_for('appointments.my_appointments'))
+    return redirect(url_for('cart.view_cart'))
+
+
+@cart_bp.route('/checkout/payphone', methods=['GET'])
+@login_required
+def checkout_payphone():
+    """Página con el botón de Payphone."""
+    user_id = session.get("user_id")
+    result  = CartService.get_cart(user_id)
+    if not result.get('count'):
+        flash("El carrito está vacío.", "warning")
+        return redirect(url_for('cart.view_cart'))
+
+    client_tx_id = uuid.uuid4().hex
+    session['payphone_client_tx_id'] = client_tx_id
+
+    total_cents   = int(result['total'] * 100)
+    payphone_token    = os.getenv('PAYPHONE_TOKEN', '')
+    payphone_store_id = os.getenv('PAYPHONE_STORE_ID', '')
+
+    return render_template('/views/cart/payphone.html',
+                           total=result['total'],
+                           total_cents=total_cents,
+                           client_tx_id=client_tx_id,
+                           payphone_token=payphone_token,
+                           payphone_store_id=payphone_store_id)
+
+
 @cart_bp.route('/checkout', methods=['POST'])
 @login_required
 def checkout():
+    """Ruta legacy — checkout directo sin pago (no expuesta en UI)."""
     user_id = session.get("user_id")
     result  = CartService.checkout(user_id)
     flash(result["message"], 'success' if result["success"] else 'danger')

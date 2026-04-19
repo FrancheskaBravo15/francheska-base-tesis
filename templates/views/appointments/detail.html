@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+{% block title %}Detalle de Cita - Shirley Buenaño{% endblock %}
+
+{% block body %}
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{{ url_for('appointments.my_appointments') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Mis Citas
+    </a>
+    <h3 class="fw-bold mb-0"><i class="bi bi-calendar-check me-2 text-danger"></i>Detalle de Cita</h3>
+</div>
+
+{% set status_order = ['pendiente_validacion', 'confirmada', 'en_curso', 'completada'] %}
+{% set current_idx = status_order.index(appt.status) if appt.status in status_order else -1 %}
+
+{% if appt.status == 'cancelada' %}
+<div class="alert alert-danger d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-x-circle-fill fs-4"></i>
+    <div><strong>Cita Cancelada.</strong> Esta cita fue cancelada y no puede ser retomada.</div>
+</div>
+{% else %}
+<!-- ── Timeline de estados ── -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-4">
+        <div class="d-flex justify-content-between align-items-start position-relative">
+            <!-- Línea de progreso -->
+            <div class="position-absolute top-50 start-0 w-100"
+                 style="height:3px;background:#e0e0e0;transform:translateY(-50%);z-index:0;
+                        margin-top:-12px;"></div>
+
+            {% set steps = [
+                ('pendiente_validacion', 'Validación de Pago', 'bi-hourglass-split'),
+                ('confirmada',           'Cita Confirmada',    'bi-check-circle-fill'),
+                ('en_curso',             'Inicio de Cita',     'bi-play-circle-fill'),
+                ('completada',           'Completada',         'bi-star-fill'),
+            ] %}
+            {% for s_key, s_label, s_icon in steps %}
+            {% set s_idx = loop.index0 %}
+            <div class="d-flex flex-column align-items-center gap-1 position-relative"
+                 style="z-index:1;flex:1;">
+                <div class="rounded-circle d-flex align-items-center justify-content-center"
+                     style="width:40px;height:40px;
+                            background:{% if s_idx < current_idx %}#c2185b{% elif s_idx == current_idx %}#c2185b{% else %}#e0e0e0{% endif %};
+                            color:{% if s_idx <= current_idx %}white{% else %}#aaa{% endif %};">
+                    <i class="bi {{ s_icon }}"></i>
+                </div>
+                <span class="small text-center fw-{% if s_idx == current_idx %}bold{% else %}normal{% endif %}"
+                      style="color:{% if s_idx == current_idx %}#c2185b{% elif s_idx < current_idx %}#333{% else %}#aaa{% endif %};
+                             font-size:.72rem;max-width:80px;">
+                    {{ s_label }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <!-- ── Info principal ── -->
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger">
+                    {% if appt.promotion_name %}
+                    <i class="bi bi-tag-fill me-1"></i>COMBO: {{ appt.promotion_name }}
+                    {% else %}
+                    <i class="bi bi-scissors me-1"></i>{{ appt.service_name }}
+                    {% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                {% if appt.promotion_name %}
+                <p class="small text-muted mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Esta cita es parte del combo. Abajo se muestran los demás servicios incluidos.
+                </p>
+                {% endif %}
+
+                <dl class="row row-cols-2 g-2 small mb-0">
+                    <dt class="col text-muted fw-normal">Servicio</dt>
+                    <dd class="col fw-semibold">{{ appt.service_name }}</dd>
+
+                    <dt class="col text-muted fw-normal">Categoría</dt>
+                    <dd class="col"><span class="badge bg-danger-subtle text-danger">{{ appt.service_category }}</span></dd>
+
+                    <dt class="col text-muted fw-normal">Especialista</dt>
+                    <dd class="col">{{ appt.worker_name }}</dd>
+
+                    <dt class="col text-muted fw-normal">Fecha</dt>
+                    <dd class="col">{{ appt.date }}</dd>
+
+                    <dt class="col text-muted fw-normal">Horario</dt>
+                    <dd class="col">{{ appt.start_time }} – {{ appt.end_time }}</dd>
+
+                    <dt class="col text-muted fw-normal">Precio</dt>
+                    <dd class="col fw-bold text-danger">${{ "%.2f"|format(appt.total_price) }}</dd>
+
+                    <dt class="col text-muted fw-normal">Pedido</dt>
+                    <dd class="col">{{ appt.created_at.strftime('%Y-%m-%d %H:%M') if appt.created_at else '—' }}</dd>
+                </dl>
+
+                <!-- Otros servicios del combo -->
+                {% if siblings %}
+                <hr>
+                <p class="small fw-semibold mb-2">Otros servicios en este combo:</p>
+                {% for s in siblings %}
+                <div class="d-flex justify-content-between small text-muted py-1
+                            {% if not loop.last %}border-bottom{% endif %}">
+                    <span><i class="bi bi-scissors me-1"></i>{{ s.service_name }} — {{ s.worker_name }}</span>
+                    <span>{{ s.date }} {{ s.start_time }}</span>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Pago ── -->
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger"><i class="bi bi-credit-card me-1"></i>Información de Pago</span>
+            </div>
+            <div class="card-body small">
+                <dl class="row g-2 mb-0">
+                    <dt class="col-5 text-muted fw-normal">Método</dt>
+                    <dd class="col-7">
+                        {% if appt.payment_method == 'voucher' %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-upload me-1"></i>Comprobante
+                            </span>
+                        {% elif appt.payment_method == 'payphone' %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-phone me-1"></i>Payphone
+                            </span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-5 text-muted fw-normal">Estado pago</dt>
+                    <dd class="col-7">
+                        {% if appt.status == 'pendiente_validacion' %}
+                            <span class="badge bg-warning text-dark">Pendiente revisión</span>
+                        {% elif appt.status in ['confirmada','en_curso','completada'] %}
+                            <span class="badge bg-success">Validado</span>
+                        {% elif appt.status == 'cancelada' %}
+                            <span class="badge bg-danger">Rechazado / Cancelado</span>
+                        {% endif %}
+                    </dd>
+
+                    {% if appt.payphone_transaction_id %}
+                    <dt class="col-5 text-muted fw-normal">ID Transacción</dt>
+                    <dd class="col-7">{{ appt.payphone_transaction_id }}</dd>
+
+                    <dt class="col-5 text-muted fw-normal">Autorización</dt>
+                    <dd class="col-7">{{ appt.payphone_auth_code or '—' }}</dd>
+                    {% endif %}
+                </dl>
+
+                {% if appt.voucher_path %}
+                <hr>
+                <p class="fw-semibold mb-2">Comprobante enviado:</p>
+                <a href="/{{ appt.voucher_path }}" target="_blank">
+                    <img src="/{{ appt.voucher_path }}" class="img-fluid rounded shadow-sm"
+                         style="max-height:200px;object-fit:contain;" alt="Comprobante">
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Acciones cliente -->
+        {% if appt.status in ['confirmada', 'pendiente_reagenda'] %}
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-body">
+                <button class="btn btn-sm btn-outline-danger w-100"
+                        data-bs-toggle="modal" data-bs-target="#cancelModal">
+                    <i class="bi bi-x-circle me-1"></i>Cancelar Cita
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if appt.status == 'cancelada' and appt.cancel_reason %}
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger"><i class="bi bi-chat-left-text me-1"></i>Motivo de Cancelación</span>
+            </div>
+            <div class="card-body small text-muted">
+                <em>"{{ appt.cancel_reason }}"</em>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Encuesta de satisfacción -->
+        {% if appt.status == 'completada' %}
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger"><i class="bi bi-star me-1"></i>Mi Experiencia</span>
+            </div>
+            <div class="card-body">
+                {% if appt.rating %}
+                <div class="mb-2">
+                    {% for i in range(1,6) %}
+                    <i class="bi bi-star{% if i <= appt.rating %}-fill{% endif %} text-warning fs-5"></i>
+                    {% endfor %}
+                    <span class="ms-2 fw-semibold">{{ appt.rating }}/5</span>
+                </div>
+                {% if appt.review_comment %}
+                <p class="text-muted small mb-1"><em>"{{ appt.review_comment }}"</em></p>
+                {% endif %}
+                {% if appt.review_date %}
+                <p class="text-muted small mb-0">
+                    {{ appt.review_date.strftime('%Y-%m-%d') if appt.review_date else '' }}
+                </p>
+                {% endif %}
+                {% else %}
+                <p class="text-muted small mb-3">¿Cómo fue tu experiencia? ¡Tu opinión nos ayuda a mejorar!</p>
+                <button class="btn btn-warning btn-sm w-100"
+                        data-bs-toggle="modal" data-bs-target="#reviewModal">
+                    <i class="bi bi-star me-1"></i>Calificar mi experiencia
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Cancelar cita -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('appointments.cancel', appointment_id=appt.appointment_id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger" id="cancelModalLabel">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar Cita
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Esta acción es irreversible. No se realizan devoluciones.</p>
+                    <label class="form-label fw-semibold">Motivo de cancelación <span class="text-danger">*</span></label>
+                    <textarea name="cancel_reason" class="form-control" rows="3"
+                              placeholder="Escribe el motivo de la cancelación..."
+                              required minlength="5"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Volver</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-circle me-1"></i>Confirmar Cancelación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Calificar cita -->
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('appointments.submit_review', appointment_id=appt.appointment_id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title text-warning" id="reviewModalLabel">
+                        <i class="bi bi-star-fill me-2"></i>Calificar mi experiencia
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">{{ appt.service_name }}</p>
+                    <label class="form-label fw-semibold">Puntuación <span class="text-danger">*</span></label>
+                    <div class="d-flex gap-2 mb-3" id="starSelector">
+                        {% for i in range(1,6) %}
+                        <i class="bi bi-star fs-3 text-warning star-btn" data-value="{{ i }}"
+                           style="cursor:pointer;"></i>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="rating" id="ratingInput" required>
+                    <label class="form-label fw-semibold">Comentario (opcional)</label>
+                    <textarea name="review_comment" class="form-control" rows="3"
+                              placeholder="Cuéntanos cómo fue tu experiencia..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-warning text-dark">
+                        <i class="bi bi-star me-1"></i>Enviar Calificación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.star-btn').forEach(star => {
+    star.addEventListener('click', () => {
+        const val = parseInt(star.dataset.value);
+        document.getElementById('ratingInput').value = val;
+        document.querySelectorAll('.star-btn').forEach(s => {
+            const sv = parseInt(s.dataset.value);
+            s.classList.toggle('bi-star-fill', sv <= val);
+            s.classList.toggle('bi-star', sv > val);
+        });
+    });
+});
+</script>
+{% endblock %}

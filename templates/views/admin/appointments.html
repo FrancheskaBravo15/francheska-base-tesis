@@ -13,7 +13,14 @@
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
     <div class="d-flex gap-2 flex-wrap">
         <button class="btn btn-sm btn-danger filter-btn active" data-filter="all">Todas</button>
+        <button class="btn btn-sm btn-outline-warning filter-btn" data-filter="pendiente_validacion">
+            Pendiente Validación
+            {% if pending_count and pending_count > 0 %}
+            <span class="badge bg-warning text-dark ms-1">{{ pending_count }}</span>
+            {% endif %}
+        </button>
         <button class="btn btn-sm btn-outline-success filter-btn" data-filter="confirmada">Confirmadas</button>
+        <button class="btn btn-sm btn-outline-primary filter-btn" data-filter="en_curso">En Curso</button>
         <button class="btn btn-sm btn-outline-secondary filter-btn" data-filter="completada">Completadas</button>
         <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="cancelada">Canceladas</button>
     </div>
@@ -53,7 +60,8 @@
                         class="combo-header"
                         style="background:#fff8fb;cursor:pointer;"
                         data-target="detail-{{ row.combo_instance_id }}"
-                        onclick="toggleDetail('detail-{{ row.combo_instance_id }}', this)">
+                        onclick="toggleDetail('detail-{{ row.combo_instance_id }}', this)"
+                        data-href="{{ url_for('admin.appointment_detail', appointment_id=row.detail_id) }}">
                         <td class="ps-3">
                             {% for e in row.entries %}
                             <div class="small {% if not loop.first %}text-muted{% else %}fw-semibold{% endif %}">
@@ -81,8 +89,12 @@
                         </td>
                         <td class="fw-bold text-danger">${{ "%.2f"|format(row.group_total) }}</td>
                         <td>
-                            {% if row.status == 'confirmada' %}
+                            {% if row.status == 'pendiente_validacion' %}
+                                <span class="badge bg-warning text-dark">Pendiente Validación</span>
+                            {% elif row.status == 'confirmada' %}
                                 <span class="badge bg-success">Confirmada</span>
+                            {% elif row.status == 'en_curso' %}
+                                <span class="badge bg-primary">En Curso</span>
                             {% elif row.status == 'completada' %}
                                 <span class="badge bg-secondary">Completada</span>
                             {% elif row.status == 'cancelada' %}
@@ -96,6 +108,11 @@
                                 <i class="bi bi-tag-fill me-1"></i>Combo
                             </span>
                             <i class="bi bi-chevron-down ms-1 small toggle-icon"></i>
+                            <a href="{{ url_for('admin.appointment_detail', appointment_id=row.detail_id) }}"
+                               class="btn btn-sm btn-outline-secondary py-0 px-1 ms-1"
+                               onclick="event.stopPropagation()">
+                                <i class="bi bi-eye"></i>
+                            </a>
                         </td>
                     </tr>
                     {# Fila de detalle expandible #}
@@ -143,8 +160,12 @@
                         <td>{{ row.worker_name }}</td>
                         <td class="fw-semibold text-danger">${{ "%.2f"|format(row.total_price) }}</td>
                         <td>
-                            {% if row.status == 'confirmada' %}
+                            {% if row.status == 'pendiente_validacion' %}
+                                <span class="badge bg-warning text-dark">Pendiente Validación</span>
+                            {% elif row.status == 'confirmada' %}
                                 <span class="badge bg-success">Confirmada</span>
+                            {% elif row.status == 'en_curso' %}
+                                <span class="badge bg-primary">En Curso</span>
                             {% elif row.status == 'completada' %}
                                 <span class="badge bg-secondary">Completada</span>
                             {% elif row.status == 'cancelada' %}
@@ -154,7 +175,11 @@
                             {% endif %}
                         </td>
                         <td class="pe-3">
-                            <span class="badge bg-light text-muted border">Individual</span>
+                            <span class="badge bg-light text-muted border me-1">Individual</span>
+                            <a href="{{ url_for('admin.appointment_detail', appointment_id=row.detail_id) }}"
+                               class="btn btn-sm btn-outline-secondary py-0 px-1">
+                                <i class="bi bi-eye"></i>
+                            </a>
                         </td>
                     </tr>
                 </tbody>
