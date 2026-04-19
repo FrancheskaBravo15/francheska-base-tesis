@@ -87,7 +87,15 @@
                             <div>{{ e.worker_name }}</div>
                             {% endfor %}
                         </td>
-                        <td class="fw-bold text-danger">${{ "%.2f"|format(row.group_total) }}</td>
+                        <td class="fw-bold text-danger">
+                            ${{ "%.2f"|format(row.group_total) }}
+                            {% set pm = row.entries[0].payment_method %}
+                            {% if pm == 'payphone' %}
+                                <i class="bi bi-phone-fill text-warning ms-1" title="Pagado con Payphone"></i>
+                            {% elif pm == 'voucher' %}
+                                <i class="bi bi-receipt text-success ms-1" title="Pagado con Comprobante"></i>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if row.status == 'pendiente_validacion' %}
                                 <span class="badge bg-warning text-dark">Pendiente Validación</span>
@@ -158,7 +166,14 @@
                         <td>{{ row.service_name }}</td>
                         <td>{{ row.client_name }}</td>
                         <td>{{ row.worker_name }}</td>
-                        <td class="fw-semibold text-danger">${{ "%.2f"|format(row.total_price) }}</td>
+                        <td class="fw-semibold text-danger">
+                            ${{ "%.2f"|format(row.total_price) }}
+                            {% if row.payment_method == 'payphone' %}
+                                <i class="bi bi-phone-fill text-warning ms-1" title="Pagado con Payphone"></i>
+                            {% elif row.payment_method == 'voucher' %}
+                                <i class="bi bi-receipt text-success ms-1" title="Pagado con Comprobante"></i>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if row.status == 'pendiente_validacion' %}
                                 <span class="badge bg-warning text-dark">Pendiente Validación</span>
