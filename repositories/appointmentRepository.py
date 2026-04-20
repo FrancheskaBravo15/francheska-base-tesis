@@ -53,10 +53,6 @@ class AppointmentRepository:
 
     @classmethod
     def find_by_worker_and_date(cls, worker_id: str, date: str) -> List[AppointmentModel]:
-        """
-        Citas de una trabajadora en una fecha específica (no canceladas).
-        Las citas con 'pendiente_reagenda' siguen ocupando su horario original.
-        """
         try:
             collection = cls._get_collection()
             return [AppointmentModel.from_dict(a) for a in
@@ -71,13 +67,40 @@ class AppointmentRepository:
 
     @classmethod
     def find_pending_reschedule_by_client(cls, client_id: str) -> List[AppointmentModel]:
-        """Citas del cliente con propuesta de reagendamiento pendiente de aceptar."""
         try:
             collection = cls._get_collection()
             return [AppointmentModel.from_dict(a) for a in
                     collection.find({"client_id": client_id, "status": "pendiente_reagenda"})]
         except PyMongoError as e:
             print(f"Error al buscar reagendamientos pendientes en la BD: {e}")
+            raise
+
+    @classmethod
+    def find_pending_validation(cls) -> List[AppointmentModel]:
+        """Citas esperando validación de comprobante por el admin."""
+        try:
+            collection = cls._get_collection()
+            return [AppointmentModel.from_dict(a) for a in
+                    collection.find({"status": "pendiente_validacion"}).sort("created_at", 1)]
+        except PyMongoError as e:
+            print(f"Error al buscar citas pendientes de validación: {e}")
+            raise
+
+    @classmethod
+    def count_pending_validation(cls) -> int:
+        try:
+            return cls._get_collection().count_documents({"status": "pendiente_validacion"})
+        except PyMongoError:
+            return 0
+
+    @classmethod
+    def find_by_combo_instance(cls, combo_instance_id: str) -> List[AppointmentModel]:
+        try:
+            collection = cls._get_collection()
+            return [AppointmentModel.from_dict(a) for a in
+                    collection.find({"combo_instance_id": combo_instance_id}).sort("start_time", 1)]
+        except PyMongoError as e:
+            print(f"Error al buscar citas del combo: {e}")
             raise
 
     @classmethod
@@ -90,11 +113,21 @@ class AppointmentRepository:
             raise
 
     @classmethod
+    def update_status_by_combo_instance(cls, combo_instance_id: str, status: str) -> int:
+        try:
+            result = cls._get_collection().update_many(
+                {"combo_instance_id": combo_instance_id},
+                {"$set": {"status": status}}
+            )
+            return result.modified_count
+        except PyMongoError as e:
+            print(f"Error al actualizar estado del combo: {e}")
+            raise
+
+    @classmethod
     def update_data(cls, appointment_id: str, data: dict) -> None:
-        """Actualización genérica de campos de una cita."""
         try:
             collection = cls._get_collection()
-            # Separar campos que se deben eliminar (None) de los que se asignan
             set_fields   = {k: v for k, v in data.items() if v is not None}
             unset_fields = {k: "" for k, v in data.items() if v is None}
             update = {}
@@ -119,13 +152,36 @@ class AppointmentRepository:
             raise
 
     @classmethod
+    def cancel_by_combo_instance_admin(cls, combo_instance_id: str, reason: str = "") -> int:
+        try:
+            collection = cls._get_collection()
+            result = collection.update_many(
+                {"combo_instance_id": combo_instance_id, "status": {"$nin": ["cancelada"]}},
+                {"$set": {"status": "cancelada", "cancel_reason": reason}}
+            )
+            return result.modified_count
+        except PyMongoError as e:
+            print(f"Error al cancelar combo por admin: {e}")
+            raise
+
+    @classmethod
+    def cancel_by_combo_instance(cls, combo_instance_id: str, client_id: str,
+                                  reason: str = "") -> int:
+        try:
+            collection = cls._get_collection()
+            result = collection.update_many(
+                {"combo_instance_id": combo_instance_id, "client_id": client_id,
+                 "status": {"$nin": ["cancelada"]}},
+                {"$set": {"status": "cancelada", "cancel_reason": reason}}
+            )
+            return result.modified_count
+        except PyMongoError as e:
+            print(f"Error al cancelar citas del combo: {e}")
+            raise
+
+    @classmethod
     def has_conflict(cls, worker_id: str, date: str, start_time: str, end_time: str,
                      exclude_id: str = None) -> bool:
-        """
-        Verifica si existe conflicto de horario para la trabajadora en la fecha dada.
-        Conflicto: otra cita activa cuya franja horaria se solapa con [start_time, end_time).
-        Las citas con 'pendiente_reagenda' siguen bloqueando su horario original.
-        """
         try:
             collection = cls._get_collection()
             query = {

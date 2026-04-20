@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Promociones - Admin{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0"><i class="bi bi-tag me-2 text-danger"></i>Gestión de Promociones</h3>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('admin.create_promotion') }}" class="btn btn-danger btn-sm">
+            <i class="bi bi-plus-lg me-1"></i>Nueva Promoción
+        </a>
+        <a href="{{ url_for('admin.panel') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Volver
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead style="background-color:#fce4ec;">
+                    <tr>
+                        <th class="ps-3">Promoción</th>
+                        <th>Servicios</th>
+                        <th>Precio Promo</th>
+                        <th>Precio Normal</th>
+                        <th>Estado</th>
+                        <th class="text-center pe-3">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for promo in promotions %}
+                    <tr>
+                        <td class="ps-3">
+                            <div class="d-flex align-items-center gap-2">
+                                {% if promo.image_url %}
+                                    <img src="{{ promo.image_url }}" width="40" height="40"
+                                         class="rounded" style="object-fit:cover;" alt="">
+                                {% else %}
+                                    <span class="rounded bg-light d-inline-flex align-items-center justify-content-center border"
+                                          style="width:40px;height:40px;">
+                                        <i class="bi bi-gift text-muted"></i>
+                                    </span>
+                                {% endif %}
+                                <div>
+                                    <div class="fw-semibold">{{ promo.name }}</div>
+                                    <div class="text-muted small">{{ promo.description[:50] if promo.description else '' }}{% if promo.description and promo.description|length > 50 %}...{% endif %}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% for svc in promo.services %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle me-1">{{ svc.name }}</span>
+                            {% endfor %}
+                        </td>
+                        <td class="fw-semibold text-danger">${{ "%.2f"|format(promo.promo_price) }}</td>
+                        <td class="text-muted text-decoration-line-through small">${{ "%.2f"|format(promo.original_price) }}</td>
+                        <td>
+                            {% if promo.is_active %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">Activa</span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Inactiva</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('admin.edit_promotion', promo_id=promo.id) }}"
+                                   class="btn btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('admin.delete_promotion', promo_id=promo.id) }}"
+                                      class="d-inline"
+                                      onsubmit="return confirm('¿Eliminar esta promoción?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="btn btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">
+                            <i class="bi bi-tag" style="font-size:2rem;"></i>
+                            <p class="mt-2 mb-0">No hay promociones. <a href="{{ url_for('admin.create_promotion') }}">Crear primera</a></p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -28,6 +28,18 @@ def inject_cart_count():
     return {"cart_count": 0}
 
 @user_bp.app_context_processor
+def inject_wishlist_count():
+    user_id = session.get("user_id")
+    if user_id:
+        try:
+            from repositories.wishlistRepository import WishlistRepository
+            wl = WishlistRepository.find_by_user_id(user_id)
+            return {"wishlist_count": len(wl.service_ids) if wl else 0}
+        except Exception:
+            pass
+    return {"wishlist_count": 0}
+
+@user_bp.app_context_processor
 def inject_reschedule_count():
     """Inyecta en todos los templates el nro. de reagendamientos pendientes del cliente."""
     user_id = session.get("user_id")

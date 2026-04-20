@@ -4,33 +4,39 @@ class CartItemModel:
     """
     Ítem dentro del carrito de compras.
     Representa un servicio reservado para una fecha/hora específica con una trabajadora.
+    Si forma parte de una promoción, lleva promotion_id y promotion_name.
     """
     def __init__(self, service_id, service_name, worker_id, worker_name,
-                 date, start_time, end_time, price):
-        self.service_id   = service_id
-        self.service_name = service_name
-        self.worker_id    = worker_id
-        self.worker_name  = worker_name
-        self.date         = date        # 'YYYY-MM-DD'
-        self.start_time   = start_time  # 'HH:MM'
-        self.end_time     = end_time    # 'HH:MM'
-        self.price        = float(price)
+                 date, start_time, end_time, price,
+                 promotion_id=None, promotion_name=None):
+        self.service_id     = service_id
+        self.service_name   = service_name
+        self.worker_id      = worker_id
+        self.worker_name    = worker_name
+        self.date           = date        # 'YYYY-MM-DD'
+        self.start_time     = start_time  # 'HH:MM'
+        self.end_time       = end_time    # 'HH:MM'
+        self.price          = float(price)
+        self.promotion_id   = promotion_id
+        self.promotion_name = promotion_name
 
     @classmethod
     def from_dict(cls, data: dict) -> 'CartItemModel':
         return cls(
-            service_id   = data["service_id"],
-            service_name = data["service_name"],
-            worker_id    = data["worker_id"],
-            worker_name  = data["worker_name"],
-            date         = data["date"],
-            start_time   = data["start_time"],
-            end_time     = data["end_time"],
-            price        = data["price"]
+            service_id     = data["service_id"],
+            service_name   = data["service_name"],
+            worker_id      = data["worker_id"],
+            worker_name    = data["worker_name"],
+            date           = data["date"],
+            start_time     = data["start_time"],
+            end_time       = data["end_time"],
+            price          = data["price"],
+            promotion_id   = data.get("promotion_id"),
+            promotion_name = data.get("promotion_name")
         )
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             "service_id":   self.service_id,
             "service_name": self.service_name,
             "worker_id":    self.worker_id,
@@ -40,6 +46,10 @@ class CartItemModel:
             "end_time":     self.end_time,
             "price":        self.price
         }
+        if self.promotion_id:
+            d["promotion_id"]   = self.promotion_id
+            d["promotion_name"] = self.promotion_name
+        return d
 
 
 class CartModel:

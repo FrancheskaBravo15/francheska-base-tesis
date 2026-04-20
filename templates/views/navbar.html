@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm sticky-top">
     <div class="container">
         <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
             <img src="/img/logo.jpeg" alt="Logo" width="36" height="36" class="rounded-circle logo-img"> Shirley Buenaño
@@ -18,13 +18,18 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.path == '/about' }}" href="{{ url_for('index.aboutRoute') }}">
+                        <i class="bi bi-info-circle me-1"></i>Nosotros
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ 'active' if request.path.startswith('/services') }}" href="{{ url_for('services.catalog') }}">
                         <i class="bi bi-scissors me-1"></i>Servicios
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ 'active' if request.path == '/about' }}" href="{{ url_for('index.aboutRoute') }}">
-                        <i class="bi bi-info-circle me-1"></i>Nosotros
+                    <a class="nav-link {{ 'active' if request.path.startswith('/promotions') }}" href="{{ url_for('promotions.list_promotions') }}">
+                        <i class="bi bi-tag me-1"></i>Promociones
                     </a>
                 </li>
             </ul>
@@ -38,24 +43,36 @@
                         <i class="bi bi-shield-lock me-1"></i>Admin
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ url_for('admin.panel') }}">Panel</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('admin.users') }}">Usuarios</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('admin.services') }}">Servicios</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('admin.workers') }}">Trabajadoras</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('admin.appointments') }}">Citas</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.panel') }}"><i class="bi bi-speedometer2 me-2"></i>Panel</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.users') }}"><i class="bi bi-people me-2"></i>Usuarios</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.categories') }}"><i class="bi bi-grid me-2"></i>Categorías</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.services') }}"><i class="bi bi-scissors me-2"></i>Servicios</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.workers') }}"><i class="bi bi-person-badge me-2"></i>Trabajadoras</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.appointments') }}"><i class="bi bi-calendar-check me-2"></i>Citas</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.promotions') }}"><i class="bi bi-tag me-2"></i>Promociones</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.testimonials') }}"><i class="bi bi-chat-quote me-2"></i>Testimonios</a></li>
                     </ul>
                 </li>
 
                 {% elif current_user.role == 'worker' %}
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('worker.dashboard') }}">Mi Panel</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('worker.appointments') }}">Mis Citas</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('worker.schedule') }}">Horario</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('worker.dashboard') }}"><i class="bi bi-speedometer2 me-1"></i>Mi Panel</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('worker.appointments') }}"><i class="bi bi-calendar-check me-1"></i>Mis Citas</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('worker.schedule') }}"><i class="bi bi-clock me-1"></i>Horario</a></li>
 
                 {% else %}
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('wishlist.view') }}">Favoritos</a></li>
+                <li class="nav-item">
+                    <a class="nav-link position-relative" href="{{ url_for('wishlist.view') }}">
+                        <i class="bi bi-heart me-1"></i>Favoritos
+                        {% if wishlist_count and wishlist_count > 0 %}
+                        <span class="badge bg-white text-dark position-absolute top-0 start-100 translate-middle">
+                            {{ wishlist_count }}
+                        </span>
+                        {% endif %}
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link position-relative" href="{{ url_for('cart.view_cart') }}">
-                            Carrito
+                            <i class="bi bi-cart me-1"></i>Carrito
                             {% if cart_count and cart_count > 0 %}
                             <span class="badge bg-white text-dark position-absolute top-0 start-100 translate-middle">
                                 {{ cart_count }}
@@ -63,7 +80,7 @@
                             {% endif %}
                         </a>
                 </li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('appointments.my_appointments') }}">Mis Citas</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('appointments.my_appointments') }}"><i class="bi bi-calendar-check me-1"></i>Mis Citas</a></li>
                 {% endif %}
 
                 <!-- PERFIL -->
@@ -84,11 +101,11 @@
                         <li>
                             <hr class="dropdown-divider">
                         </li>
-                        <li><a class="dropdown-item" href="{{ url_for('users.profile') }}">Mi Perfil</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('users.profile') }}"><i class="bi bi-person me-2"></i>Mi Perfil</a></li>
                         <li>
                             <form action="{{ url_for('users.logout') }}" method="POST">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button class="dropdown-item text-danger">Cerrar sesión</button>
+                                <button class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión</button>
                             </form>
                         </li>
                     </ul>
@@ -97,11 +114,11 @@
                 {% else %}
 
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('users.login') }}">Ingresar</a>
+                    <a class="nav-link" href="{{ url_for('users.login') }}"><i class="bi bi-box-arrow-in-right me-1"></i>Ingresar</a>
                 </li>
                 <li class="nav-item">
                     <a class="btn btn-register ms-2" href="{{ url_for('users.register') }}">
-                            Registrarse
+                            <i class="bi bi-person-plus me-1"></i>Registrarse
                         </a>
                 </li>
 

@@ -1,5 +1,6 @@
 from flask import render_template, request, redirect, url_for, Blueprint, flash, session, jsonify
 from services.serviceService import ServiceService
+from services.categoryService import CategoryService
 from services.reviewService import ReviewService
 from services.wishlistService import WishlistService
 from services.workerService import WorkerService
@@ -10,7 +11,7 @@ service_bp = Blueprint('services', __name__, url_prefix='/services')
 def catalog():
     category  = request.args.get('category', '')
     result    = ServiceService.get_all_services(only_active=True)
-    categories = ServiceService.get_categories()
+    categories = CategoryService.get_all_categories().get("categories", [])
     services   = result.get("services", [])
 
     if category:

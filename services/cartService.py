@@ -88,53 +88,188 @@ class CartService:
             return {"success": False, "message": f"Error al eliminar del carrito: {e}"}
 
     @staticmethod
-    def checkout(user_id: str) -> Dict:
+    def checkout(user_id: str, payment_method: str = None,
+                 voucher_path: str = None,
+                 payphone_client_tx_id: str = None,
+                 payphone_transaction_id: int = None,
+                 payphone_auth_code: str = None) -> Dict:
         """
-        Convierte los ítems del carrito en citas confirmadas.
-        Verifica conflictos antes de crear cada cita.
+        Convierte los ítems del carrito en citas.
+        payment_method='voucher'  → status 'pendiente_validacion'
+        payment_method='payphone' → status 'confirmada'
+        payment_method=None       → status 'confirmada' (flujo directo/legacy)
+        Combos: todo-o-nada.
         """
         from models.appointmentModel import AppointmentModel
         from repositories.appointmentRepository import AppointmentRepository as AR
+
+        initial_status = "pendiente_validacion" if payment_method == "voucher" else "confirmada"
 
         try:
             cart = CartRepository.find_by_user_id(user_id)
             if not cart or not cart.items:
                 return {"success": False, "message": "El carrito está vacío"}
 
+            promo_groups     = {}
+            standalone_items = []
+            for item in cart.items:
+                if item.promotion_id:
+                    if item.promotion_id not in promo_groups:
+                        promo_groups[item.promotion_id] = {"name": item.promotion_name, "items": []}
+                    promo_groups[item.promotion_id]["items"].append(item)
+                else:
+                    standalone_items.append(item)
+
             created = []
             failed  = []
 
-            for item in cart.items:
-                # Re-verificar conflicto en el momento del checkout
-                if AR.has_conflict(item.worker_id, item.date, item.start_time, item.end_time):
-                    failed.append(f"'{item.service_name}' con {item.worker_name} el {item.date} a las {item.start_time} ya no está disponible")
+            import uuid
+            for promo_id, group in promo_groups.items():
+                conflicts = [
+                    f"'{i.service_name}' con {i.worker_name} el {i.date} a las {i.start_time}"
+                    for i in group["items"]
+                    if AR.has_conflict(i.worker_id, i.date, i.start_time, i.end_time)
+                ]
+                if conflicts:
+                    failed.append(
+                        f"Combo '{group['name']}' no confirmado: "
+                        + "; ".join(conflicts) + " ya no está disponible"
+                    )
                     continue
 
-                appt = AppointmentModel(
+                instance_id = uuid.uuid4().hex
+                for item in group["items"]:
+                    AR.create(AppointmentModel(
+                        client_id=user_id,
+                        worker_id=item.worker_id,
+                        service_id=item.service_id,
+                        date=item.date,
+                        start_time=item.start_time,
+                        end_time=item.end_time,
+                        total_price=item.price,
+                        status=initial_status,
+                        promotion_id=item.promotion_id,
+                        promotion_name=item.promotion_name,
+                        combo_instance_id=instance_id,
+                        payment_method=payment_method,
+                        voucher_path=voucher_path,
+                        payphone_client_tx_id=payphone_client_tx_id,
+                        payphone_transaction_id=payphone_transaction_id,
+                        payphone_auth_code=payphone_auth_code,
+                    ))
+                created.append(f"Combo '{group['name']}'")
+
+            for item in standalone_items:
+                if AR.has_conflict(item.worker_id, item.date, item.start_time, item.end_time):
+                    failed.append(
+                        f"'{item.service_name}' con {item.worker_name} "
+                        f"el {item.date} a las {item.start_time} ya no está disponible"
+                    )
+                    continue
+                AR.create(AppointmentModel(
                     client_id=user_id,
                     worker_id=item.worker_id,
                     service_id=item.service_id,
                     date=item.date,
                     start_time=item.start_time,
                     end_time=item.end_time,
-                    total_price=item.price
-                )
-                AR.create(appt)
+                    total_price=item.price,
+                    status=initial_status,
+                    payment_method=payment_method,
+                    voucher_path=voucher_path,
+                    payphone_client_tx_id=payphone_client_tx_id,
+                    payphone_transaction_id=payphone_transaction_id,
+                    payphone_auth_code=payphone_auth_code,
+                ))
                 created.append(item.service_name)
 
             if failed and not created:
-                return {"success": False, "message": "No se pudo confirmar ninguna cita: " + "; ".join(failed)}
+                return {"success": False, "message": "No se pudo reservar ninguna cita: " + "; ".join(failed)}
 
-            # Vaciar carrito
             CartRepository.clear(user_id)
 
-            msg = f"{len(created)} cita(s) confirmada(s)."
+            msg = f"{len(created)} elemento(s) reservado(s)."
             if failed:
-                msg += f" {len(failed)} no se pudo confirmar: " + "; ".join(failed)
+                msg += " No se pudo reservar: " + "; ".join(failed)
 
             return {"success": True, "message": msg, "created": created, "failed": failed}
         except Exception as e:
             return {"success": False, "message": f"Error en checkout: {e}"}
+
+    @staticmethod
+    def add_promotion_to_cart(user_id: str, promotion_id: str, promo_name: str,
+                              promo_price: float, selections: list) -> Dict:
+        """
+        Agrega todos los servicios de una promoción al carrito como grupo.
+        selections: [{"service_id": ..., "worker_id": ..., "date": ..., "start_time": ...}, ...]
+        El precio se distribuye proporcionalmente entre los ítems.
+        """
+        try:
+            if not selections:
+                return {"success": False, "message": "No hay selecciones"}
+
+            n = len(selections)
+            per_item = round(promo_price / n, 2)
+            first_item_price = round(promo_price - per_item * (n - 1), 2)
+
+            cart = CartRepository.find_by_user_id(user_id) or CartModel(user_id=user_id)
+
+            for existing in cart.items:
+                if existing.promotion_id == promotion_id:
+                    return {"success": False, "message": "Esta promoción ya está en el carrito"}
+
+            new_items = []
+            for i, sel in enumerate(selections):
+                service = ServiceRepository.find_by_id(sel["service_id"])
+                if not service or not service.is_active:
+                    return {"success": False, "message": "Un servicio de la promoción no está disponible"}
+
+                worker = WorkerRepository.find_by_id(sel["worker_id"])
+                if not worker or not worker.is_active:
+                    return {"success": False, "message": "Una especialista seleccionada no está disponible"}
+
+                start_mins = _time_to_minutes(sel["start_time"])
+                end_time   = _minutes_to_time(start_mins + service.duration_minutes)
+
+                if AppointmentRepository.has_conflict(sel["worker_id"], sel["date"], sel["start_time"], end_time):
+                    return {"success": False, "message": f"La especialista no tiene disponibilidad para '{service.name}' en ese horario"}
+
+                worker_person = PersonRepository.find_by_user_id(worker.user_id)
+                worker_name   = f"{worker_person.first_name} {worker_person.last_name}" if worker_person else "N/A"
+
+                new_items.append(CartItemModel(
+                    service_id     = sel["service_id"],
+                    service_name   = service.name,
+                    worker_id      = sel["worker_id"],
+                    worker_name    = worker_name,
+                    date           = sel["date"],
+                    start_time     = sel["start_time"],
+                    end_time       = end_time,
+                    price          = first_item_price if i == 0 else per_item,
+                    promotion_id   = promotion_id,
+                    promotion_name = promo_name
+                ))
+
+            cart.items.extend(new_items)
+            CartRepository.upsert(cart)
+            return {"success": True, "message": f"Promoción '{promo_name}' agregada al carrito", "count": len(cart.items)}
+        except Exception as e:
+            return {"success": False, "message": f"Error al agregar promoción: {e}"}
+
+    @staticmethod
+    def remove_promotion_from_cart(user_id: str, promotion_id: str) -> Dict:
+        try:
+            cart = CartRepository.find_by_user_id(user_id)
+            if not cart:
+                return {"success": False, "message": "Carrito no encontrado"}
+            original = len(cart.items)
+            cart.items = [i for i in cart.items if i.promotion_id != promotion_id]
+            if len(cart.items) == original:
+                return {"success": False, "message": "Promoción no encontrada en el carrito"}
+            CartRepository.upsert(cart)
+            return {"success": True, "message": "Promoción eliminada del carrito"}
+        except Exception as e:
+            return {"success": False, "message": f"Error: {e}"}
 
     @staticmethod
     def clear_cart(user_id: str) -> Dict:

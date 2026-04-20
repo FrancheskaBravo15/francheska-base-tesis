@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Categorías - Admin{% endblock %}
+
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold mb-0"><i class="bi bi-grid me-2 text-danger"></i>Gestión de Categorías</h3>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('admin.create_category') }}" class="btn btn-danger btn-sm">
+            <i class="bi bi-plus-lg me-1"></i>Nueva Categoría
+        </a>
+        <a href="{{ url_for('admin.panel') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Volver
+        </a>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for cat in categories %}
+    <div class="col-sm-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            {% if cat.image_url %}
+                <img src="{{ cat.image_url }}" class="card-img-top" alt="{{ cat.name }}"
+                     style="height:160px;object-fit:cover;">
+            {% else %}
+                <div class="d-flex align-items-center justify-content-center"
+                     style="height:160px;background:#fce4ec;">
+                    <i class="bi bi-image text-danger" style="font-size:2.5rem;"></i>
+                </div>
+            {% endif %}
+            <div class="card-body">
+                <h6 class="fw-bold mb-1">{{ cat.name }}</h6>
+                <p class="text-muted small mb-3">{{ cat.description[:80] if cat.description else 'Sin descripción' }}{% if cat.description and cat.description|length > 80 %}...{% endif %}</p>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('admin.edit_category', category_id=cat.id) }}"
+                       class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil me-1"></i>Editar
+                    </a>
+                    <form method="POST" action="{{ url_for('admin.delete_category', category_id=cat.id) }}"
+                          class="d-inline"
+                          onsubmit="return confirm('¿Eliminar esta categoría permanentemente?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-trash me-1"></i>Eliminar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12 text-center py-5 text-muted">
+        <i class="bi bi-grid" style="font-size:3rem;"></i>
+        <p class="mt-3">No hay categorías aún. <a href="{{ url_for('admin.create_category') }}">Crear primera</a></p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

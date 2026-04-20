@@ -4,23 +4,99 @@ from services.appointmentService import AppointmentService
 
 appointment_bp = Blueprint('appointments', __name__, url_prefix='/appointments')
 
+
+@appointment_bp.route('/<appointment_id>/detail', methods=['GET'])
+@login_required
+def detail(appointment_id):
+    user_id = session.get("user_id")
+    result  = AppointmentService.get_appointment_detail(appointment_id, user_id=user_id)
+    if not result["success"]:
+        flash(result["message"], "danger")
+        return redirect(url_for('appointments.my_appointments'))
+    return render_template('/views/appointments/detail.html',
+                           appt=result["appointment"],
+                           siblings=result.get("siblings", []))
+
 @appointment_bp.route('/', methods=['GET'])
 @login_required
 def my_appointments():
     user_id = session.get("user_id")
     result  = AppointmentService.get_client_appointments(user_id)
     pending_reschedules = AppointmentService.count_pending_reschedules(user_id)
+
+    appointments = result.get("appointments", [])
+
+    promo_groups = {}
+    standalone   = []
+    for appt in appointments:
+        cid = appt.get("combo_instance_id")
+        if cid:
+            if cid not in promo_groups:
+                promo_groups[cid] = {
+                    "row_type":          "combo",
+                    "combo_instance_id": cid,
+                    "promotion_id":      appt.get("promotion_id"),
+                    "promotion_name":    appt.get("promotion_name", "Promoción"),
+                    "status":            appt["status"],
+                    "group_total":       0.0,
+                    "entries":           []
+                }
+            promo_groups[cid]["entries"].append(appt)
+            promo_groups[cid]["group_total"] = round(
+                promo_groups[cid]["group_total"] + appt["total_price"], 2
+            )
+        else:
+            appt["row_type"] = "standalone"
+            standalone.append(appt)
+
+    def _dt_str(dt):
+        if dt is None: return "0000-00-00 00:00:00"
+        return dt.strftime("%Y-%m-%d %H:%M:%S") if hasattr(dt, 'strftime') else str(dt)
+
+    rows = []
+    for g in promo_groups.values():
+        g["sort_key"]       = max(e["created_at"] for e in g["entries"] if e["created_at"])
+        g["sort_order_str"] = _dt_str(g["sort_key"])
+        g["sort_appt_str"]  = min(f"{e['date']} {e['start_time']}" for e in g["entries"])
+        rows.append(g)
+    for a in standalone:
+        a["sort_key"]       = a["created_at"]
+        a["sort_order_str"] = _dt_str(a["created_at"])
+        a["sort_appt_str"]  = f"{a['date']} {a['start_time']}"
+        rows.append(a)
+    rows.sort(key=lambda x: x["sort_key"], reverse=True)
+
     return render_template('/views/appointments/list.html',
-                           appointments=result.get("appointments", []),
+                           rows=rows,
                            pending_reschedules=pending_reschedules)
+
+@appointment_bp.route('/cancel-group/<combo_instance_id>', methods=['POST'])
+@login_required
+def cancel_group(combo_instance_id):
+    user_id = session.get("user_id")
+    reason  = request.form.get('cancel_reason', '')
+    result  = AppointmentService.cancel_group(combo_instance_id, user_id, reason=reason)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('appointments.my_appointments'))
 
 @appointment_bp.route('/<appointment_id>/cancel', methods=['POST'])
 @login_required
 def cancel(appointment_id):
     user_id = session.get("user_id")
-    result  = AppointmentService.cancel_appointment(appointment_id, user_id)
+    reason  = request.form.get('cancel_reason', '')
+    result  = AppointmentService.cancel_appointment(appointment_id, user_id, reason=reason)
     flash(result["message"], 'success' if result["success"] else 'danger')
     return redirect(url_for('appointments.my_appointments'))
+
+@appointment_bp.route('/<appointment_id>/review', methods=['POST'])
+@login_required
+def submit_review(appointment_id):
+    user_id = session.get("user_id")
+    rating  = request.form.get('rating', 0)
+    comment = request.form.get('review_comment', '')
+    result  = AppointmentService.submit_review(appointment_id, user_id, rating, comment)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('appointments.detail', appointment_id=appointment_id))
 
 @appointment_bp.route('/<appointment_id>/accept-reschedule', methods=['POST'])
 @login_required

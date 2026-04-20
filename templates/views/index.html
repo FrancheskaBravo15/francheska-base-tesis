@@ -1,7 +1,7 @@
 {% extends 'base.html' %} {% block title %}Inicio - Centro de Estética Shirley Buenaño{% endblock %} {% block body %}
 
 <!-- Hero -->
-<div class="rounded-4 text-white text-center p-5 mb-5" style="background: linear-gradient(135deg, #f7f6f6, #f2bdd9);">
+<div class="rounded-4 text-white text-center p-5 mb-5" style="background: linear-gradient(rgba(246,7,80,0.3),rgba(246,87,90,0.3)), linear-gradient(1deg,#f7f6f6,#f66bb4);">
     <h1 class="display-5 fw-bold mb-3">
         <i class="bi bi-stars me-2"></i>Bienvenida a Shirley Buenaño
     </h1>
@@ -18,31 +18,167 @@
     </div>
 </div>
 
-<!-- Categorías -->
-{% if categories %}
+<!-- ── CAROUSEL PROMOCIONES ── -->
+{% if promotions %}
 <div class="mb-5">
-    <h4 class="fw-bold mb-3"><i class="bi bi-grid me-2 text-primary"></i>Categorías</h4>
-    <div class="d-flex flex-wrap gap-2">
-        <a href="{{ url_for('services.catalog') }}" class="btn btn-outline-primary btn-sm">
-            <i class="bi bi-grid-fill me-1"></i>Todas
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold mb-0"><i class="bi bi-tag-fill me-2 text-danger"></i>Promociones Especiales</h4>
+        <a href="{{ url_for('promotions.list_promotions') }}" class="btn btn-outline-danger btn-sm">
+            Ver todas <i class="bi bi-arrow-right ms-1"></i>
         </a>
-        {% for cat in categories %}
-        <a href="{{ url_for('services.catalog', category=cat) }}" class="btn btn-sm" style="background-color:#f3e5f5; color:#4a148c;">
-            {{ cat }}
-        </a> {% endfor %}
+    </div>
+
+    <div id="promoCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="4000">
+        <!-- Indicadores -->
+        <div class="carousel-indicators">
+            {% for promo in promotions %}
+            <button type="button" data-bs-target="#promoCarousel" data-bs-slide-to="{{ loop.index0 }}"
+                    class="{% if loop.first %}active{% endif %}"
+                    aria-label="Slide {{ loop.index }}"></button>
+            {% endfor %}
+        </div>
+
+        <div class="carousel-inner rounded-4 shadow">
+            {% for promo in promotions %}
+            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                <!-- Imagen de fondo -->
+                {% if promo.image_url %}
+                <img src="{{ promo.image_url }}" class="d-block w-100"
+                     alt="{{ promo.name }}" style="height:360px;object-fit:cover;">
+                {% else %}
+                <div style="height:360px;background:linear-gradient(135deg,#c2185b,#e91e63);"></div>
+                {% endif %}
+
+                <!-- Overlay con info -->
+                <div class="carousel-caption d-flex flex-column align-items-center justify-content-center h-100"
+                     style="background:rgba(0,0,0,0.45);inset:0;position:absolute;border-radius:.5rem;">
+                    <span class="badge mb-2 px-3 py-2 fs-6" style="background-color:#c2185b;">
+                        <i class="bi bi-tag-fill me-1"></i>
+                        {% if promo.original_price and promo.original_price > promo.promo_price %}
+                            {{ "%.0f"|format(((promo.original_price - promo.promo_price) / promo.original_price) * 100) }}% OFF
+                        {% else %}
+                            Promo
+                        {% endif %}
+                    </span>
+                    <h3 class="fw-bold text-white mb-1">{{ promo.name }}</h3>
+                    {% if promo.description %}
+                    <p class="text-white opacity-75 small mb-2">{{ promo.description[:80] }}{% if promo.description|length > 80 %}...{% endif %}</p>
+                    {% endif %}
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        {% if promo.original_price and promo.original_price > promo.promo_price %}
+                        <span class="text-white opacity-50 text-decoration-line-through">${{ "%.2f"|format(promo.original_price) }}</span>
+                        {% endif %}
+                        <span class="fw-bold fs-4 text-white">${{ "%.2f"|format(promo.promo_price) }}</span>
+                    </div>
+                    <a href="{{ url_for('promotions.detail', promo_id=promo.id) }}"
+                       class="btn btn-light fw-semibold px-4">
+                        <i class="bi bi-eye me-2"></i>Ver Combo
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Controles -->
+        {% if promotions|length > 1 %}
+        <button class="carousel-control-prev" type="button" data-bs-target="#promoCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#promoCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+        </button>
+        {% endif %}
     </div>
 </div>
 {% endif %}
 
-<!-- Servicios destacados -->
-<h4 class="fw-bold mb-4"><i class="bi bi-star me-2 text-primary"></i>Servicios Destacados</h4>
+<!-- ── CAROUSEL CATEGORÍAS ── -->
+{% if categories %}
+<div class="mb-5">
+    <h4 class="fw-bold mb-4"><i class="bi bi-grid me-2 text-danger"></i>Nuestras Categorías</h4>
+
+    <div id="catCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3500">
+
+        <div class="carousel-inner">
+            {% for chunk in categories | batch(4) %}
+            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                <div class="row g-3">
+                    {% for cat in chunk %}
+                    <div class="col-6 col-md-3">
+                        <a href="{{ url_for('services.catalog', category=cat.name) }}" class="text-decoration-none">
+                            <div class="cat-card rounded-4 shadow overflow-hidden position-relative"
+                                 style="height:190px;">
+                                {% if cat.image_url %}
+                                    <img src="{{ cat.image_url }}" alt="{{ cat.name }}"
+                                         class="cat-card-img">
+                                {% else %}
+                                    <div class="w-100 h-100"
+                                         style="background:linear-gradient(135deg,#c2185b,#e91e63);"></div>
+                                {% endif %}
+                                <!-- Overlay degradado -->
+                                <div class="position-absolute bottom-0 start-0 end-0"
+                                     style="background:linear-gradient(transparent,rgba(0,0,0,0.72));padding:36px 12px 14px;">
+                                    <p class="text-white fw-bold mb-0 text-center"
+                                       style="font-size:1rem;text-shadow:0 1px 4px rgba(0,0,0,.5);">
+                                        {{ cat.name }}
+                                    </p>
+                                </div>
+                                <!-- Hover shimmer -->
+                                <div class="cat-card-hover position-absolute top-0 start-0 end-0 bottom-0 rounded-4"
+                                     style="background:rgba(194,24,91,0);transition:background .25s;"></div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if categories|length > 4 %}
+        <!-- Controles personalizados -->
+        <button class="carousel-control-prev cat-carousel-btn" type="button"
+                data-bs-target="#catCarousel" data-bs-slide="prev">
+            <i class="bi bi-chevron-left" style="font-size:1.4rem;color:#c2185b;"></i>
+        </button>
+        <button class="carousel-control-next cat-carousel-btn" type="button"
+                data-bs-target="#catCarousel" data-bs-slide="next">
+            <i class="bi bi-chevron-right" style="font-size:1.4rem;color:#c2185b;"></i>
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- Indicadores de puntos debajo -->
+    {% if categories|length > 4 %}
+    <div class="d-flex justify-content-center gap-2 mt-3">
+        {% set cat_pages = (categories|length / 4)|round(0,'ceil')|int %}
+        {% for p in range(cat_pages) %}
+        <button type="button" data-bs-target="#catCarousel" data-bs-slide-to="{{ p }}"
+                class="rounded-circle border-0 {% if p == 0 %}cat-dot-active{% endif %} cat-dot"
+                style="width:10px;height:10px;padding:0;background-color:{% if p == 0 %}#c2185b{% else %}#ddd{% endif %};">
+        </button>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- ── SERVICIOS DESTACADOS ── -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0"><i class="bi bi-star me-2 text-primary"></i>Servicios Destacados</h4>
+    <a href="{{ url_for('services.catalog') }}" class="btn btn-outline-danger btn-sm">
+        Ver todos <i class="bi bi-arrow-right ms-1"></i>
+    </a>
+</div>
+
 {% if services %}
 <div class="row g-4 mb-4">
     {% for service in services %}
     <div class="col-sm-6 col-lg-4">
         <div class="card h-100 shadow-sm border-0">
             {% if service.image_url %}
-            <img src="{{ service.image_url }}" class="card-img-top" alt="{{ service.name }}" style="height:180px;object-fit:cover;"> {% else %}
+            <img src="{{ service.image_url }}" class="card-img-top" alt="{{ service.name }}" style="height:180px;object-fit:cover;">
+            {% else %}
             <div class="d-flex align-items-center justify-content-center" style="height:180px;background-color:#f3e5f5;">
                 <i class="bi bi-scissors text-primary" style="font-size:3rem;"></i>
             </div>
@@ -51,7 +187,7 @@
                 <span class="badge mb-2" style="background-color:#b388ff;">{{ service.category }}</span>
                 <h6 class="card-title fw-bold">{{ service.name }}</h6>
                 <p class="card-text text-muted small">
-                    {{ service.description[:80] if service.description else '' }} {% if service.description and service.description|length > 80 %}...{% endif %}
+                    {{ service.description[:80] if service.description else '' }}{% if service.description and service.description|length > 80 %}...{% endif %}
                 </p>
                 <div class="d-flex justify-content-between align-items-center mt-2">
                     <div>
@@ -67,11 +203,6 @@
     </div>
     {% endfor %}
 </div>
-<div class="text-center mb-5">
-    <a href="{{ url_for('services.catalog') }}" class="btn btn-primary px-4 shadow-sm">
-        <i class="bi bi-grid me-2"></i>Ver Todos los Servicios
-    </a>
-</div>
 {% else %}
 <div class="text-center py-5 text-muted">
     <i class="bi bi-scissors" style="font-size:3rem;"></i>
@@ -84,7 +215,7 @@
 </div>
 {% endif %}
 
-<!-- Beneficios -->
+<!-- ── ¿POR QUÉ ELEGIRNOS? ── -->
 <div class="row g-4 mt-2">
     <div class="col-12">
         <h4 class="fw-bold"><i class="bi bi-check-circle me-2 text-primary"></i>¿Por qué elegirnos?</h4>
@@ -119,32 +250,25 @@
     </div>
 </div>
 
-<!-- Testimonios -->
+<!-- ── TESTIMONIOS ── -->
+{% if testimonials %}
 <div class="mt-5 p-5 bg-light rounded-4 shadow-sm text-center">
-    <h4 class="fw-bold mb-4"><i class="bi bi-chat-quote text-primary me-2"></i>Lo que dicen nuestras clientas</h4>
+    <h4 class="fw-bold mb-4"><i class="bi bi-chat-quote text-danger me-2"></i>Lo que dicen nuestras clientas</h4>
     <div class="row g-4">
+        {% for t in testimonials %}
         <div class="col-md-4">
             <div class="p-3 bg-white rounded shadow-sm h-100">
-                <p class="small text-muted">“Excelente atención y resultados increíbles. Me sentí como en casa.”</p>
-                <div class="text-warning"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
-                <small class="fw-bold">María P.</small>
+                <p class="small text-muted fst-italic">"{{ t.comment }}"</p>
+                <div class="text-warning mb-1">
+                    {% for i in range(t.rating) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                    {% for i in range(5 - t.rating) %}<i class="bi bi-star text-muted"></i>{% endfor %}
+                </div>
+                <small class="fw-bold">{{ t.author_name }}</small>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="p-3 bg-white rounded shadow-sm h-100">
-                <p class="small text-muted">“Los servicios son de primera calidad, siempre vuelvo feliz.”</p>
-                <div class="text-warning"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
-                <small class="fw-bold">Carolina R.</small>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="p-3 bg-white rounded shadow-sm h-100">
-                <p class="small text-muted">“Me encantó el maquillaje, muy profesional y duradero.”</p>
-                <div class="text-warning"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star
--fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
-                <small class="fw-bold">Lucía M.</small>
-            </div>
-        </div>
+        {% endfor %}
     </div>
 </div>
+{% endif %}
+
 {% endblock %}

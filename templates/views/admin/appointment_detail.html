@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+{% block title %}Detalle Cita - Admin{% endblock %}
+
+{% block body %}
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{{ url_for('admin.appointments') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Todas las Citas
+    </a>
+    <h3 class="fw-bold mb-0"><i class="bi bi-calendar-check me-2 text-danger"></i>Detalle de Cita</h3>
+    <!-- Badge estado -->
+    {% if appt.status == 'pendiente_validacion' %}
+        <span class="badge bg-warning text-dark fs-6">Pendiente Validación</span>
+    {% elif appt.status == 'confirmada' %}
+        <span class="badge bg-success fs-6">Confirmada</span>
+    {% elif appt.status == 'en_curso' %}
+        <span class="badge bg-primary fs-6">En Curso</span>
+    {% elif appt.status == 'completada' %}
+        <span class="badge bg-secondary fs-6">Completada</span>
+    {% elif appt.status == 'cancelada' %}
+        <span class="badge bg-danger fs-6">Cancelada</span>
+    {% endif %}
+</div>
+
+{% set status_order = ['pendiente_validacion', 'confirmada', 'en_curso', 'completada'] %}
+{% set current_idx = status_order.index(appt.status) if appt.status in status_order else -1 %}
+
+{% if appt.status != 'cancelada' %}
+<!-- ── Timeline ── -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-4">
+        <div class="d-flex justify-content-between align-items-start position-relative">
+            <div class="position-absolute top-50 start-0 w-100"
+                 style="height:3px;background:#e0e0e0;transform:translateY(-50%);z-index:0;margin-top:-12px;"></div>
+            {% set steps = [
+                ('pendiente_validacion', 'Validación de Pago', 'bi-hourglass-split'),
+                ('confirmada',           'Cita Confirmada',    'bi-check-circle-fill'),
+                ('en_curso',             'Inicio de Cita',     'bi-play-circle-fill'),
+                ('completada',           'Completada',         'bi-star-fill'),
+            ] %}
+            {% for s_key, s_label, s_icon in steps %}
+            {% set s_idx = loop.index0 %}
+            <div class="d-flex flex-column align-items-center gap-1 position-relative" style="z-index:1;flex:1;">
+                <div class="rounded-circle d-flex align-items-center justify-content-center"
+                     style="width:40px;height:40px;
+                            background:{% if s_idx <= current_idx %}#c2185b{% else %}#e0e0e0{% endif %};
+                            color:{% if s_idx <= current_idx %}white{% else %}#aaa{% endif %};">
+                    <i class="bi {{ s_icon }}"></i>
+                </div>
+                <span class="small text-center" style="font-size:.72rem;max-width:80px;
+                     color:{% if s_idx == current_idx %}#c2185b{% elif s_idx < current_idx %}#333{% else %}#aaa{% endif %};
+                     font-weight:{% if s_idx == current_idx %}600{% else %}400{% endif %}">
+                    {{ s_label }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <!-- ── Info cita ── -->
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger">
+                    {% if appt.promotion_name %}
+                    <i class="bi bi-tag-fill me-1"></i>COMBO: {{ appt.promotion_name }}
+                    {% else %}
+                    <i class="bi bi-scissors me-1"></i>{{ appt.service_name }}
+                    {% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <dl class="row row-cols-2 g-2 small mb-0">
+                    <dt class="col text-muted fw-normal">Cliente</dt>
+                    <dd class="col fw-semibold">{{ appt.client_name }}</dd>
+
+                    <dt class="col text-muted fw-normal">Servicio</dt>
+                    <dd class="col">{{ appt.service_name }}</dd>
+
+                    <dt class="col text-muted fw-normal">Categoría</dt>
+                    <dd class="col"><span class="badge bg-danger-subtle text-danger">{{ appt.service_category }}</span></dd>
+
+                    <dt class="col text-muted fw-normal">Especialista</dt>
+                    <dd class="col">{{ appt.worker_name }}</dd>
+
+                    <dt class="col text-muted fw-normal">Fecha</dt>
+                    <dd class="col">{{ appt.date }}</dd>
+
+                    <dt class="col text-muted fw-normal">Horario</dt>
+                    <dd class="col">{{ appt.start_time }} – {{ appt.end_time }}</dd>
+
+                    <dt class="col text-muted fw-normal">Precio</dt>
+                    <dd class="col fw-bold text-danger">${{ "%.2f"|format(appt.total_price) }}</dd>
+
+                    <dt class="col text-muted fw-normal">Pedido el</dt>
+                    <dd class="col">{{ appt.created_at.strftime('%Y-%m-%d %H:%M') if appt.created_at else '—' }}</dd>
+                </dl>
+
+                {% if siblings %}
+                <hr>
+                <p class="small fw-semibold mb-2">Servicios del combo:</p>
+                {% for s in siblings %}
+                <div class="d-flex justify-content-between small text-muted py-1
+                            {% if not loop.last %}border-bottom{% endif %}">
+                    <span><i class="bi bi-scissors me-1"></i>{{ s.service_name }} — {{ s.worker_name }}</span>
+                    <span>{{ s.date }} {{ s.start_time }}</span>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Pago + Acciones Admin ── -->
+    <div class="col-md-5">
+        <!-- Info de pago -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger"><i class="bi bi-credit-card me-1"></i>Pago</span>
+            </div>
+            <div class="card-body small">
+                <dl class="row g-2 mb-0">
+                    <dt class="col-5 text-muted fw-normal">Método</dt>
+                    <dd class="col-7">
+                        {% if appt.payment_method == 'voucher' %}
+                            <span class="badge bg-warning text-dark"><i class="bi bi-upload me-1"></i>Comprobante</span>
+                        {% elif appt.payment_method == 'payphone' %}
+                            <span class="badge bg-success"><i class="bi bi-phone me-1"></i>Payphone</span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </dd>
+                    {% if appt.payphone_transaction_id %}
+                    <dt class="col-5 text-muted fw-normal">ID Payphone</dt>
+                    <dd class="col-7">{{ appt.payphone_transaction_id }}</dd>
+                    <dt class="col-5 text-muted fw-normal">Autorización</dt>
+                    <dd class="col-7">{{ appt.payphone_auth_code or '—' }}</dd>
+                    {% endif %}
+                </dl>
+
+                {% if appt.voucher_path %}
+                <hr>
+                <p class="fw-semibold mb-2">Comprobante:</p>
+                <a href="/{{ appt.voucher_path }}" target="_blank">
+                    <img src="/{{ appt.voucher_path }}" class="img-fluid rounded shadow-sm"
+                         style="max-height:220px;object-fit:contain;" alt="Comprobante">
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if appt.status == 'cancelada' and appt.cancel_reason %}
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger"><i class="bi bi-chat-left-text me-1"></i>Motivo de Cancelación</span>
+            </div>
+            <div class="card-body small text-muted">
+                <em>"{{ appt.cancel_reason }}"</em>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if appt.status == 'completada' and appt.rating %}
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger"><i class="bi bi-star me-1"></i>Reseña del Cliente</span>
+            </div>
+            <div class="card-body small">
+                <div class="mb-1">
+                    {% for i in range(1,6) %}
+                    <i class="bi bi-star{% if i <= appt.rating %}-fill{% endif %} text-warning fs-5"></i>
+                    {% endfor %}
+                    <span class="ms-2 fw-semibold">{{ appt.rating }}/5</span>
+                </div>
+                {% if appt.review_comment %}
+                <p class="text-muted mb-1"><em>"{{ appt.review_comment }}"</em></p>
+                {% endif %}
+                {% if appt.review_date %}
+                <p class="text-muted mb-0 small">
+                    {{ appt.review_date.strftime('%Y-%m-%d %H:%M') if appt.review_date else '' }}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ── Acciones Admin ── -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+                <span class="fw-bold text-danger"><i class="bi bi-gear me-1"></i>Acciones</span>
+            </div>
+            <div class="card-body d-grid gap-2">
+
+                {% if appt.status == 'pendiente_validacion' %}
+                <!-- Validar comprobante -->
+                <form method="POST"
+                      action="{{ url_for('admin.validate_payment', appointment_id=appt.appointment_id) }}"
+                      onsubmit="return confirm('¿Validar el pago y confirmar la cita?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-success w-100">
+                        <i class="bi bi-check-circle me-1"></i>Validar Pago → Confirmar Cita
+                    </button>
+                </form>
+
+                {% elif appt.status == 'confirmada' %}
+                <!-- Iniciar cita -->
+                <form method="POST"
+                      action="{{ url_for('admin.start_appointment', appointment_id=appt.appointment_id) }}"
+                      onsubmit="return confirm('¿Marcar esta cita como en curso?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-primary w-100">
+                        <i class="bi bi-play-circle me-1"></i>Iniciar Cita
+                    </button>
+                </form>
+
+                {% elif appt.status == 'en_curso' %}
+                <!-- Completar cita -->
+                <form method="POST"
+                      action="{{ url_for('admin.complete_appointment', appointment_id=appt.appointment_id) }}"
+                      onsubmit="return confirm('¿Marcar esta cita como completada?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-secondary w-100">
+                        <i class="bi bi-star me-1"></i>Marcar como Completada
+                    </button>
+                </form>
+
+                {% else %}
+                <p class="text-muted small text-center mb-0">
+                    No hay acciones disponibles para este estado.
+                </p>
+                {% endif %}
+
+                {% if appt.status not in ['cancelada', 'completada'] %}
+                <hr class="my-2">
+                <button class="btn btn-outline-danger w-100"
+                        data-bs-toggle="modal" data-bs-target="#cancelModal">
+                    <i class="bi bi-x-circle me-1"></i>Cancelar Cita
+                </button>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Cancelar cita (admin) -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST"
+                  action="{{ url_for('admin.cancel_appointment', appointment_id=appt.appointment_id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar Cita
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        El cliente podrá ver el motivo de cancelación en el detalle de su cita.
+                        {% if appt.combo_instance_id %}
+                        <strong>Se cancelarán todos los servicios del combo.</strong>
+                        {% endif %}
+                    </p>
+                    <label class="form-label fw-semibold">
+                        Motivo de cancelación <span class="text-danger">*</span>
+                    </label>
+                    <textarea name="cancel_reason" class="form-control" rows="3"
+                              placeholder="Escribe el motivo de la cancelación..."
+                              required minlength="5"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">Volver</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-circle me-1"></i>Confirmar Cancelación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -20,133 +20,361 @@
 </div>
 {% endif %}
 
-<!-- Filtros -->
-<div class="d-flex gap-2 mb-4 flex-wrap">
-    <button class="btn btn-sm btn-danger filter-btn active" data-filter="all">Todas</button>
-    <button class="btn btn-sm btn-outline-success filter-btn" data-filter="confirmada">Confirmadas</button>
-    <button class="btn btn-sm btn-outline-warning filter-btn" data-filter="pendiente_reagenda">
-        Reagendamiento
-        {% if pending_reschedules and pending_reschedules > 0 %}
-            <span class="badge bg-warning text-dark ms-1">{{ pending_reschedules }}</span>
-        {% endif %}
-    </button>
-    <button class="btn btn-sm btn-outline-secondary filter-btn" data-filter="completada">Completadas</button>
-    <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="cancelada">Canceladas</button>
+<!-- Filtros y ordenamiento -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm btn-danger filter-btn active" data-filter="all">Todas</button>
+        <button class="btn btn-sm btn-outline-warning filter-btn" data-filter="pendiente_validacion">Pendiente Validación</button>
+        <button class="btn btn-sm btn-outline-success filter-btn" data-filter="confirmada">Confirmadas</button>
+        <button class="btn btn-sm btn-outline-warning filter-btn" data-filter="pendiente_reagenda">
+            Reagendamiento
+            {% if pending_reschedules and pending_reschedules > 0 %}
+                <span class="badge bg-warning text-dark ms-1">{{ pending_reschedules }}</span>
+            {% endif %}
+        </button>
+        <button class="btn btn-sm btn-outline-secondary filter-btn" data-filter="completada">Completadas</button>
+        <button class="btn btn-sm btn-outline-danger filter-btn" data-filter="cancelada">Canceladas</button>
+    </div>
+    <div class="btn-group btn-group-sm" role="group" aria-label="Ordenar por">
+        <button class="btn btn-danger sort-btn active" data-sort="order">
+            <i class="bi bi-receipt me-1"></i>Fecha de pedido
+        </button>
+        <button class="btn btn-outline-danger sort-btn" data-sort="appt">
+            <i class="bi bi-calendar-event me-1"></i>Fecha de cita
+        </button>
+    </div>
 </div>
 
-{% if appointments %}
-    <div class="row g-3" id="appointmentsList">
-        {% for appt in appointments %}
-        <div class="col-md-6 appt-card" data-status="{{ appt.status }}">
-            <div class="card border-0 shadow-sm h-100 {% if appt.status == 'pendiente_reagenda' %}border-warning border{% endif %}">
-                <div class="card-body">
-                    <!-- Encabezado -->
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h6 class="fw-bold mb-0">{{ appt.service_name }}</h6>
-                        {% if appt.status == 'confirmada' %}
+<!-- Modal: Cancelar cita -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="cancelForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title text-danger" id="cancelModalLabel">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar Cita
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Esta acción es irreversible. No se realizan devoluciones.</p>
+                    <label class="form-label fw-semibold">Motivo de cancelación <span class="text-danger">*</span></label>
+                    <textarea name="cancel_reason" class="form-control" rows="3"
+                              placeholder="Escribe el motivo de la cancelación..."
+                              required minlength="5"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Volver</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-circle me-1"></i>Confirmar Cancelación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Calificar cita -->
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="reviewForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title text-warning" id="reviewModalLabel">
+                        <i class="bi bi-star-fill me-2"></i>Calificar mi experiencia
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3" id="reviewServiceName"></p>
+                    <label class="form-label fw-semibold">Puntuación <span class="text-danger">*</span></label>
+                    <div class="d-flex gap-2 mb-3" id="starSelector">
+                        {% for i in range(1,6) %}
+                        <i class="bi bi-star fs-3 text-warning star-btn" data-value="{{ i }}"
+                           style="cursor:pointer;"></i>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="rating" id="ratingInput" required>
+                    <label class="form-label fw-semibold">Comentario (opcional)</label>
+                    <textarea name="review_comment" class="form-control" rows="3"
+                              placeholder="Cuéntanos cómo fue tu experiencia..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-warning text-dark">
+                        <i class="bi bi-star me-1"></i>Enviar Calificación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if rows %}
+<div class="row g-3" id="appointmentsList">
+
+    {% for row in rows %}
+    {% if row.row_type == 'combo' %}
+    <!-- ── COMBO ── -->
+    <div class="col-12 appt-card"
+         data-status="{{ row.status }}"
+         data-sort-order="{{ row.sort_order_str }}"
+         data-sort-appt="{{ row.sort_appt_str }}">
+        <div class="card border-0 shadow-sm" style="border-left:4px solid #c2185b !important;">
+            <div class="card-header py-2 px-3"
+                 style="background:#fce4ec;border-bottom:1px solid #f8bbd0;">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-tag-fill text-danger"></i>
+                        <span class="fw-bold text-danger">COMBO: {{ row.promotion_name }}</span>
+                        {% if row.status == 'pendiente_validacion' %}
+                            <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>Pendiente Validación</span>
+                        {% elif row.status == 'confirmada' %}
                             <span class="badge bg-success">Confirmada</span>
-                        {% elif appt.status == 'pendiente_reagenda' %}
-                            <span class="badge bg-warning text-dark">
-                                <i class="bi bi-clock-history me-1"></i>Reagendamiento propuesto
-                            </span>
-                        {% elif appt.status == 'completada' %}
+                        {% elif row.status == 'en_curso' %}
+                            <span class="badge bg-primary"><i class="bi bi-play-circle me-1"></i>En Curso</span>
+                        {% elif row.status == 'pendiente_reagenda' %}
+                            <span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i>Reagendamiento</span>
+                        {% elif row.status == 'completada' %}
                             <span class="badge bg-secondary">Completada</span>
-                        {% elif appt.status == 'cancelada' %}
+                        {% elif row.status == 'cancelada' %}
                             <span class="badge bg-danger">Cancelada</span>
                         {% endif %}
                     </div>
-
-                    <span class="badge bg-danger-subtle text-danger mb-2">{{ appt.service_category }}</span>
-
-                    <!-- Info del horario actual -->
-                    <div class="text-muted small mb-2">
-                        <div><i class="bi bi-person-badge me-2"></i>{{ appt.worker_name }}</div>
-                        <div><i class="bi bi-calendar me-2"></i>{{ appt.date }}</div>
-                        <div><i class="bi bi-clock me-2"></i>{{ appt.start_time }} - {{ appt.end_time }}</div>
-                    </div>
-
-                    <!-- Propuesta de reagendamiento -->
-                    {% if appt.status == 'pendiente_reagenda' %}
-                    <div class="rounded-3 p-3 mb-3" style="background-color:#fff8e1;">
-                        <div class="fw-semibold small mb-1">
-                            <i class="bi bi-calendar2-plus me-1 text-warning"></i>Nuevo horario propuesto:
-                        </div>
-                        <div class="text-muted small">
-                            <i class="bi bi-calendar me-1"></i><strong>{{ appt.proposed_date }}</strong>
-                            &nbsp;·&nbsp;
-                            <i class="bi bi-clock me-1"></i><strong>{{ appt.proposed_start_time }} - {{ appt.proposed_end_time }}</strong>
-                        </div>
-                        {% if appt.reschedule_reason %}
-                        <div class="text-muted small mt-1">
-                            <i class="bi bi-chat-left-text me-1"></i>
-                            <em>"{{ appt.reschedule_reason }}"</em>
-                        </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="fw-bold text-danger">
+                            ${{ "%.2f"|format(row.group_total) }}
+                            {% set pm = row.entries[0].payment_method %}
+                            {% if pm == 'payphone' %}
+                                <i class="bi bi-phone-fill text-warning ms-1" title="Pagado con Payphone"></i>
+                            {% elif pm == 'voucher' %}
+                                <i class="bi bi-receipt text-success ms-1" title="Pagado con Comprobante"></i>
+                            {% endif %}
+                        </span>
+                        <a href="{{ url_for('appointments.detail', appointment_id=row.entries[0].appointment_id) }}"
+                           class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-eye me-1"></i>Detalle
+                        </a>
+                        {% if row.status in ['confirmada', 'pendiente_reagenda'] %}
+                        <button class="btn btn-sm btn-outline-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#cancelModal"
+                                data-action="{{ url_for('appointments.cancel_group', combo_instance_id=row.combo_instance_id) }}"
+                                data-label="Cancelar Combo">
+                            <i class="bi bi-x-circle me-1"></i>Cancelar Combo
+                        </button>
                         {% endif %}
-
-                        <!-- Botones aceptar / rechazar -->
-                        <div class="d-flex gap-2 mt-3">
-                            <form method="POST"
-                                  action="{{ url_for('appointments.accept_reschedule', appointment_id=appt.appointment_id) }}"
-                                  onsubmit="return confirm('¿Aceptar el nuevo horario propuesto?')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button class="btn btn-sm btn-success">
-                                    <i class="bi bi-check-circle me-1"></i>Aceptar
-                                </button>
-                            </form>
-                            <form method="POST"
-                                  action="{{ url_for('appointments.reject_reschedule', appointment_id=appt.appointment_id) }}"
-                                  onsubmit="return confirm('¿Rechazar la propuesta? La cita se mantendrá en el horario original.')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button class="btn btn-sm btn-outline-danger">
-                                    <i class="bi bi-x-circle me-1"></i>Rechazar
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <!-- Precio y acciones -->
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="fw-bold text-danger">${{ "%.2f"|format(appt.total_price) }}</span>
-                        {% if appt.status == 'confirmada' %}
-                            <form method="POST"
-                                  action="{{ url_for('appointments.cancel', appointment_id=appt.appointment_id) }}"
-                                  onsubmit="return confirm('¿Cancelar esta cita? No hay devolución de dinero.')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button class="btn btn-sm btn-outline-danger">
-                                    <i class="bi bi-x-circle me-1"></i>Cancelar
-                                </button>
-                            </form>
-                        {% elif appt.status == 'pendiente_reagenda' %}
-                            <form method="POST"
-                                  action="{{ url_for('appointments.cancel', appointment_id=appt.appointment_id) }}"
-                                  onsubmit="return confirm('¿Cancelar esta cita? No hay devolución de dinero.')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button class="btn btn-sm btn-outline-danger">
-                                    <i class="bi bi-x-circle me-1"></i>Cancelar
-                                </button>
-                            </form>
+                        {% if row.status == 'completada' and row.entries[0].rating is none %}
+                        <button class="btn btn-sm btn-outline-warning"
+                                data-bs-toggle="modal"
+                                data-bs-target="#reviewModal"
+                                data-action="{{ url_for('appointments.submit_review', appointment_id=row.entries[0].appointment_id) }}"
+                                data-service="{{ row.promotion_name }}">
+                            <i class="bi bi-star me-1"></i>Calificar
+                        </button>
                         {% endif %}
                     </div>
                 </div>
             </div>
+
+            <div class="card-body p-0">
+                {% for appt in row.entries %}
+                <div class="px-3 py-3 {% if not loop.last %}border-bottom{% endif %}">
+                    <div class="row align-items-start g-2">
+                        <div class="col-md-8">
+                            <div class="fw-semibold">{{ appt.service_name }}</div>
+                            <span class="badge bg-danger-subtle text-danger mb-1">{{ appt.service_category }}</span>
+                            <div class="text-muted small">
+                                <i class="bi bi-person-badge me-1"></i>{{ appt.worker_name }}<br>
+                                <i class="bi bi-calendar me-1"></i>{{ appt.date }}
+                                &nbsp;<i class="bi bi-clock me-1"></i>{{ appt.start_time }} – {{ appt.end_time }}
+                            </div>
+
+                            {% if appt.status == 'pendiente_reagenda' %}
+                            <div class="rounded-3 p-2 mt-2" style="background-color:#fff8e1;">
+                                <div class="fw-semibold small mb-1">
+                                    <i class="bi bi-calendar2-plus me-1 text-warning"></i>Nuevo horario propuesto:
+                                </div>
+                                <div class="text-muted small">
+                                    <strong>{{ appt.proposed_date }}</strong>
+                                    &nbsp;·&nbsp;
+                                    <strong>{{ appt.proposed_start_time }} – {{ appt.proposed_end_time }}</strong>
+                                </div>
+                                {% if appt.reschedule_reason %}
+                                <div class="text-muted small mt-1"><em>"{{ appt.reschedule_reason }}"</em></div>
+                                {% endif %}
+                                <div class="d-flex gap-2 mt-2">
+                                    <form method="POST" action="{{ url_for('appointments.accept_reschedule', appointment_id=appt.appointment_id) }}"
+                                          onsubmit="return confirm('¿Aceptar el nuevo horario?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button class="btn btn-sm btn-success"><i class="bi bi-check-circle me-1"></i>Aceptar</button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('appointments.reject_reschedule', appointment_id=appt.appointment_id) }}"
+                                          onsubmit="return confirm('¿Rechazar la propuesta?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle me-1"></i>Rechazar</button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         </div>
-        {% endfor %}
     </div>
+
+    {% else %}
+    <!-- ── CITA INDIVIDUAL ── -->
+    <div class="col-md-6 appt-card"
+         data-status="{{ row.status }}"
+         data-sort-order="{{ row.sort_order_str }}"
+         data-sort-appt="{{ row.sort_appt_str }}">
+        <div class="card border-0 shadow-sm h-100 {% if row.status == 'pendiente_reagenda' %}border-warning border{% endif %}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="fw-bold mb-0">{{ row.service_name }}</h6>
+                    {% if row.status == 'pendiente_validacion' %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-hourglass-split me-1"></i>Pendiente Validación
+                        </span>
+                    {% elif row.status == 'confirmada' %}
+                        <span class="badge bg-success">Confirmada</span>
+                    {% elif row.status == 'en_curso' %}
+                        <span class="badge bg-primary">
+                            <i class="bi bi-play-circle me-1"></i>En Curso
+                        </span>
+                    {% elif row.status == 'pendiente_reagenda' %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-clock-history me-1"></i>Reagendamiento propuesto
+                        </span>
+                    {% elif row.status == 'completada' %}
+                        <span class="badge bg-secondary">Completada</span>
+                    {% elif row.status == 'cancelada' %}
+                        <span class="badge bg-danger">Cancelada</span>
+                    {% endif %}
+                </div>
+
+                <span class="badge bg-danger-subtle text-danger mb-2">{{ row.service_category }}</span>
+
+                <div class="text-muted small mb-2">
+                    <div><i class="bi bi-person-badge me-2"></i>{{ row.worker_name }}</div>
+                    <div><i class="bi bi-calendar me-2"></i>{{ row.date }}</div>
+                    <div><i class="bi bi-clock me-2"></i>{{ row.start_time }} - {{ row.end_time }}</div>
+                </div>
+
+                {% if row.status == 'pendiente_reagenda' %}
+                <div class="rounded-3 p-3 mb-3" style="background-color:#fff8e1;">
+                    <div class="fw-semibold small mb-1">
+                        <i class="bi bi-calendar2-plus me-1 text-warning"></i>Nuevo horario propuesto:
+                    </div>
+                    <div class="text-muted small">
+                        <strong>{{ row.proposed_date }}</strong>
+                        &nbsp;·&nbsp;
+                        <strong>{{ row.proposed_start_time }} - {{ row.proposed_end_time }}</strong>
+                    </div>
+                    {% if row.reschedule_reason %}
+                    <div class="text-muted small mt-1"><em>"{{ row.reschedule_reason }}"</em></div>
+                    {% endif %}
+                    <div class="d-flex gap-2 mt-3">
+                        <form method="POST" action="{{ url_for('appointments.accept_reschedule', appointment_id=row.appointment_id) }}"
+                              onsubmit="return confirm('¿Aceptar el nuevo horario propuesto?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-sm btn-success"><i class="bi bi-check-circle me-1"></i>Aceptar</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('appointments.reject_reschedule', appointment_id=row.appointment_id) }}"
+                              onsubmit="return confirm('¿Rechazar la propuesta?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle me-1"></i>Rechazar</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-danger">
+                        ${{ "%.2f"|format(row.total_price) }}
+                        {% if row.payment_method == 'payphone' %}
+                            <i class="bi bi-phone-fill text-warning ms-1" title="Pagado con Payphone"></i>
+                        {% elif row.payment_method == 'voucher' %}
+                            <i class="bi bi-receipt text-success ms-1" title="Pagado con Comprobante"></i>
+                        {% endif %}
+                    </span>
+                    <div class="d-flex gap-2 align-items-center">
+                    <a href="{{ url_for('appointments.detail', appointment_id=row.appointment_id) }}"
+                       class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-eye me-1"></i>Detalle
+                    </a>
+                    {% if row.status in ['confirmada', 'pendiente_reagenda'] %}
+                    <button class="btn btn-sm btn-outline-danger"
+                            data-bs-toggle="modal"
+                            data-bs-target="#cancelModal"
+                            data-action="{{ url_for('appointments.cancel', appointment_id=row.appointment_id) }}"
+                            data-label="Cancelar Cita">
+                        <i class="bi bi-x-circle me-1"></i>Cancelar
+                    </button>
+                    {% endif %}
+                    {% if row.status == 'completada' and row.rating is none %}
+                    <button class="btn btn-sm btn-outline-warning"
+                            data-bs-toggle="modal"
+                            data-bs-target="#reviewModal"
+                            data-action="{{ url_for('appointments.submit_review', appointment_id=row.appointment_id) }}"
+                            data-service="{{ row.service_name }}">
+                        <i class="bi bi-star me-1"></i>Calificar
+                    </button>
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+</div>
 {% else %}
-    <div class="text-center py-5 text-muted">
-        <i class="bi bi-calendar-x" style="font-size:4rem;"></i>
-        <h5 class="mt-4">No tienes citas aún</h5>
-        <p>Explora nuestros servicios y agenda tu primera cita.</p>
-        <a href="{{ url_for('services.catalog') }}" class="btn btn-danger mt-2">
-            <i class="bi bi-scissors me-2"></i>Ver Servicios
-        </a>
-    </div>
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-calendar-x" style="font-size:4rem;"></i>
+    <h5 class="mt-4">No tienes citas aún</h5>
+    <p>Explora nuestros servicios y agenda tu primera cita.</p>
+    <a href="{{ url_for('services.catalog') }}" class="btn btn-danger mt-2">
+        <i class="bi bi-scissors me-2"></i>Ver Servicios
+    </a>
+</div>
 {% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
+const container = document.getElementById('appointmentsList');
+
+function sortCards(attr) {
+    if (!container) return;
+    const cards = Array.from(container.children);
+    cards.sort((a, b) => {
+        const va = a.dataset[attr] || '';
+        const vb = b.dataset[attr] || '';
+        return vb < va ? -1 : vb > va ? 1 : 0;
+    });
+    cards.forEach(c => container.appendChild(c));
+}
+
+document.querySelectorAll('.sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.sort-btn').forEach(b => {
+            b.classList.remove('btn-danger', 'active');
+            b.classList.add('btn-outline-danger');
+        });
+        btn.classList.remove('btn-outline-danger');
+        btn.classList.add('btn-danger', 'active');
+        sortCards(btn.dataset.sort === 'appt' ? 'sortAppt' : 'sortOrder');
+    });
+});
+
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.filter-btn').forEach(b =>
@@ -155,6 +383,39 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
         const filter = btn.dataset.filter;
         document.querySelectorAll('.appt-card').forEach(card => {
             card.style.display = (filter === 'all' || card.dataset.status === filter) ? '' : 'none';
+        });
+    });
+});
+
+// Cancel modal
+const cancelModal = document.getElementById('cancelModal');
+cancelModal?.addEventListener('show.bs.modal', e => {
+    const btn = e.relatedTarget;
+    document.getElementById('cancelForm').action = btn.dataset.action;
+    cancelModal.querySelector('textarea[name="cancel_reason"]').value = '';
+});
+
+// Review modal
+const reviewModal = document.getElementById('reviewModal');
+reviewModal?.addEventListener('show.bs.modal', e => {
+    const btn = e.relatedTarget;
+    document.getElementById('reviewForm').action = btn.dataset.action;
+    document.getElementById('reviewServiceName').textContent = btn.dataset.service || '';
+    document.getElementById('ratingInput').value = '';
+    document.querySelectorAll('.star-btn').forEach(s => {
+        s.classList.remove('bi-star-fill');
+        s.classList.add('bi-star');
+    });
+});
+
+document.querySelectorAll('.star-btn').forEach(star => {
+    star.addEventListener('click', () => {
+        const val = parseInt(star.dataset.value);
+        document.getElementById('ratingInput').value = val;
+        document.querySelectorAll('.star-btn').forEach(s => {
+            const sv = parseInt(s.dataset.value);
+            s.classList.toggle('bi-star-fill', sv <= val);
+            s.classList.toggle('bi-star', sv > val);
         });
     });
 });

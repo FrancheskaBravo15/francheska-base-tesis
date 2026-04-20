@@ -12,7 +12,51 @@
 {% if items %}
 <div class="row g-4">
     <div class="col-lg-8">
-        {% for item in items %}
+
+        <!-- ── GRUPOS DE PROMOCIÓN ── -->
+        {% for group in promo_groups %}
+        <div class="card border-0 shadow-sm mb-3" style="border-left:4px solid #c2185b !important;">
+            <div class="card-header d-flex justify-content-between align-items-center py-2 px-3"
+                 style="background:#fce4ec;border-bottom:1px solid #f8bbd0;">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-tag-fill text-danger"></i>
+                    <span class="fw-bold text-danger small">COMBO: {{ group.promotion_name }}</span>
+                </div>
+                <form method="POST"
+                      action="{{ url_for('cart.remove_promotion', promotion_id=group.promotion_id) }}"
+                      onsubmit="return confirm('¿Eliminar el combo del carrito?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-danger py-0 px-2">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="card-body pb-2">
+                {% for entry in group.entries %}
+                {% set item = entry.item %}
+                <div class="d-flex justify-content-between align-items-start py-2
+                            {% if not loop.last %}border-bottom{% endif %}">
+                    <div>
+                        <div class="fw-semibold small">{{ item.service_name }}</div>
+                        <div class="text-muted small">
+                            <i class="bi bi-person-badge me-1"></i>{{ item.worker_name }}<br>
+                            <i class="bi bi-calendar me-1"></i>{{ item.date }}
+                            &nbsp;<i class="bi bi-clock me-1"></i>{{ item.start_time }} – {{ item.end_time }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                <div class="d-flex justify-content-between align-items-center pt-2 mt-1">
+                    <span class="text-muted small">Total del combo</span>
+                    <span class="fw-bold text-danger">${{ "%.2f"|format(group.group_total) }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- ── SERVICIOS INDIVIDUALES ── -->
+        {% for entry in standalone_items %}
+        {% set item = entry.item %}
         <div class="card border-0 shadow-sm mb-3">
             <div class="card-body">
                 <div class="row align-items-center g-3">
@@ -20,15 +64,15 @@
                         <h6 class="fw-bold mb-1">{{ item.service_name }}</h6>
                         <div class="text-muted small">
                             <i class="bi bi-person-badge me-1"></i>{{ item.worker_name }}<br>
-                            <i class="bi bi-calendar me-1"></i>{{ item.date }} &nbsp;
-                            <i class="bi bi-clock me-1"></i>{{ item.start_time }} - {{ item.end_time }}
+                            <i class="bi bi-calendar me-1"></i>{{ item.date }}
+                            &nbsp;<i class="bi bi-clock me-1"></i>{{ item.start_time }} – {{ item.end_time }}
                         </div>
                     </div>
                     <div class="col-md-3 text-md-center">
                         <span class="fs-5 fw-bold text-danger">${{ "%.2f"|format(item.price) }}</span>
                     </div>
                     <div class="col-md-2 text-md-end">
-                        <form method="POST" action="{{ url_for('cart.remove', item_index=loop.index0) }}"
+                        <form method="POST" action="{{ url_for('cart.remove', item_index=entry.index) }}"
                               onsubmit="return confirm('¿Eliminar este servicio del carrito?')">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button class="btn btn-sm btn-outline-danger">
@@ -41,7 +85,6 @@
         </div>
         {% endfor %}
 
-        <!-- Vaciar carrito -->
         <form method="POST" action="{{ url_for('cart.clear') }}"
               onsubmit="return confirm('¿Vaciar todo el carrito?')">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -51,41 +94,96 @@
         </form>
     </div>
 
+    <!-- ── RESUMEN ── -->
     <div class="col-lg-4">
         <div class="card border-0 shadow-sm">
             <div class="card-header" style="background-color:#c2185b;">
-                <h6 class="mb-0 text-white"><i class="bi bi-receipt me-2"></i>Resumen</h6>
+                <h6 class="mb-0 text-white"><i class="bi bi-receipt me-2"></i>Resumen del Pedido</h6>
             </div>
             <div class="card-body">
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Servicios ({{ items|length }})</span>
-                    <span>${{ "%.2f"|format(total) }}</span>
+                {% for group in promo_groups %}
+                <div class="d-flex justify-content-between mb-1 small">
+                    <span class="text-muted"><i class="bi bi-tag-fill text-danger me-1"></i>{{ group.promotion_name }}</span>
+                    <span>${{ "%.2f"|format(group.group_total) }}</span>
                 </div>
+                {% endfor %}
+                {% if standalone_items %}
+                <div class="d-flex justify-content-between mb-1 small">
+                    <span class="text-muted">Servicios individuales ({{ standalone_items|length }})</span>
+                    <span>${{ "%.2f"|format(standalone_items | sum(attribute='item.price')) }}</span>
+                </div>
+                {% endif %}
                 <hr>
-                <div class="d-flex justify-content-between mb-3">
+                <div class="d-flex justify-content-between mb-4">
                     <span class="fw-bold">Total</span>
                     <span class="fw-bold text-danger fs-5">${{ "%.2f"|format(total) }}</span>
                 </div>
 
-                <div class="alert alert-warning small mb-3">
+                <p class="text-muted small mb-2 fw-semibold">
+                    <i class="bi bi-credit-card me-1"></i>Selecciona tu método de pago:
+                </p>
+
+                <!-- Botón Comprobante -->
+                <button type="button" class="btn btn-outline-danger w-100 mb-2"
+                        data-bs-toggle="modal" data-bs-target="#voucherModal">
+                    <i class="bi bi-upload me-2"></i>Pagar con Comprobante
+                </button>
+
+                <!-- Botón Payphone -->
+                <a href="{{ url_for('cart.checkout_payphone') }}" class="btn btn-danger w-100">
+                    <i class="bi bi-phone me-2"></i>Pagar con Payphone
+                </a>
+
+                <div class="alert alert-warning small mt-3 mb-0">
                     <i class="bi bi-exclamation-triangle me-1"></i>
                     Las citas canceladas <strong>no tienen devolución</strong>.
                 </div>
-
-                <form method="POST" action="{{ url_for('cart.checkout') }}"
-                      onsubmit="return confirm('¿Confirmar todas las citas del carrito? No hay devolución.')">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-danger w-100 btn-lg">
-                        <i class="bi bi-check-circle me-2"></i>Confirmar Citas
-                    </button>
-                </form>
-                <p class="text-muted text-center small mt-2 mb-0">
-                    <i class="bi bi-lock me-1"></i>Pago seguro con Payphone
-                </p>
             </div>
         </div>
     </div>
 </div>
+
+<!-- ── Modal Comprobante ── -->
+<div class="modal fade" id="voucherModal" tabindex="-1" aria-labelledby="voucherModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#fce4ec;">
+                <h5 class="modal-title fw-bold text-danger" id="voucherModalLabel">
+                    <i class="bi bi-upload me-2"></i>Subir Comprobante de Pago
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('cart.checkout_voucher') }}"
+                  enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Realiza tu transferencia o depósito y sube la foto o PDF del comprobante.
+                        El administrador lo revisará y confirmará tu cita.
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Comprobante <span class="text-danger">*</span></label>
+                        <input type="file" name="voucher" class="form-control"
+                               accept=".png,.jpg,.jpeg,.gif,.webp" required>
+                        <div class="form-text">Formatos: PNG, JPG, JPEG, GIF, WEBP</div>
+                    </div>
+                    <div class="alert alert-info small mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Tu cita quedará en estado <strong>"Pendiente de Validación"</strong> hasta
+                        que el administrador apruebe el pago.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-send me-1"></i>Enviar Comprobante
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% else %}
 <div class="text-center py-5 text-muted">
     <i class="bi bi-cart-x" style="font-size:4rem;"></i>
