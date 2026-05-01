@@ -40,7 +40,7 @@
 <script type="module" src="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js"></script>
 <script>
     window.addEventListener('DOMContentLoaded', () => {
-        ppb = new PPaymentButtonBox({
+        const ppb = new PPaymentButtonBox({
             token: "{{ payphone_token }}",
             clientTransactionId: "{{ client_tx_id }}",
             amount: {
