@@ -263,6 +263,16 @@ class CartService:
                 if AppointmentRepository.has_conflict(sel["worker_id"], sel_date, sel["start_time"], end_time):
                     return {"success": False, "message": f"La especialista no tiene disponibilidad para '{service.name}' en ese horario"}
 
+                # Verificar que el cliente no esté en dos servicios del combo al mismo tiempo
+                current_start = _time_to_minutes(sel["start_time"])
+                current_end   = _time_to_minutes(end_time)
+                for prev in new_items:
+                    if prev.date == sel_date:
+                        if not (current_end <= _time_to_minutes(prev.start_time) or
+                                current_start >= _time_to_minutes(prev.end_time)):
+                            return {"success": False,
+                                    "message": f"'{service.name}' se superpone con '{prev.service_name}' del combo en el mismo horario"}
+
                 worker_person = PersonRepository.find_by_user_id(worker.user_id)
                 worker_name   = f"{worker_person.first_name} {worker_person.last_name}" if worker_person else "N/A"
 
