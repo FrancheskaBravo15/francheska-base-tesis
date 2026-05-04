@@ -1,4 +1,4 @@
-{% extends 'base.html' %} {% block title %}Pago con Payphone - Shirley Buenaño{% endblock %} {% block extra_css %}
+﻿{% extends 'base.html' %} {% block title %}Pago con Payphone - Shirley Buenaño{% endblock %} {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.css"> {% endblock %} {% block body %}
 <div class="row justify-content-center">
     <div class="col-lg-6">
@@ -12,7 +12,7 @@
 
         <!-- Resumen -->
         <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header" style="background:#c2185b;">
+            <div class="card-header" style="background:#7C4A6B;">
                 <h6 class="mb-0 text-white"><i class="bi bi-receipt me-2"></i>Total a pagar</h6>
             </div>
             <div class="card-body text-center py-4">
@@ -37,24 +37,18 @@
     </div>
 </div>
 {% endblock %} {% block extra_js %}
+<script id="pp-meta" type="application/json">{{ {"token": payphone_token, "txId": client_tx_id, "amount": total_cents, "storeId": payphone_store_id} | tojson }}</script>
 <script type="module" src="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js"></script>
 <script>
     window.addEventListener('DOMContentLoaded', () => {
+        const meta = JSON.parse(document.getElementById('pp-meta').textContent);
         ppb = new PPaymentButtonBox({
-            token: "{{ payphone_token }}",
-            clientTransactionId: "{{ client_tx_id }}",
-            amount: {
-                {
-                    total_cents
-                }
-            },
-            amountWithoutTax: {
-                {
-                    total_cents
-                }
-            },
+            token: meta.token,
+            clientTransactionId: meta.txId,
+            amount: meta.amount,
+            amountWithoutTax: meta.amount,
             currency: "USD",
-            storeId: "{{ payphone_store_id }}",
+            storeId: meta.storeId,
             reference: "Cita - Shirley Buenaño"
         }).render('pp-button');
     });

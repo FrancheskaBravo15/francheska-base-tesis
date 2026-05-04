@@ -1,5 +1,15 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Detalle de Cita - Shirley Buenaño{% endblock %}
+
+{% block extra_css %}
+<style>
+.step-circle-active   { background: #7C4A6B; color: white; }
+.step-circle-inactive { background: #e0e0e0; color: #aaa; }
+.step-label-current   { color: #7C4A6B; }
+.step-label-done      { color: #333; }
+.step-label-future    { color: #aaa; }
+</style>
+{% endblock %}
 
 {% block body %}
 <div class="d-flex align-items-center gap-3 mb-4">
@@ -37,15 +47,12 @@
             {% set s_idx = loop.index0 %}
             <div class="d-flex flex-column align-items-center gap-1 position-relative"
                  style="z-index:1;flex:1;">
-                <div class="rounded-circle d-flex align-items-center justify-content-center"
-                     style="width:40px;height:40px;
-                            background:{% if s_idx < current_idx %}#c2185b{% elif s_idx == current_idx %}#c2185b{% else %}#e0e0e0{% endif %};
-                            color:{% if s_idx <= current_idx %}white{% else %}#aaa{% endif %};">
+                <div class="rounded-circle d-flex align-items-center justify-content-center {% if s_idx <= current_idx %}step-circle-active{% else %}step-circle-inactive{% endif %}"
+                     style="width:40px;height:40px;">
                     <i class="bi {{ s_icon }}"></i>
                 </div>
-                <span class="small text-center fw-{% if s_idx == current_idx %}bold{% else %}normal{% endif %}"
-                      style="color:{% if s_idx == current_idx %}#c2185b{% elif s_idx < current_idx %}#333{% else %}#aaa{% endif %};
-                             font-size:.72rem;max-width:80px;">
+                <span class="small text-center fw-{% if s_idx == current_idx %}bold{% else %}normal{% endif %} {% if s_idx == current_idx %}step-label-current{% elif s_idx < current_idx %}step-label-done{% else %}step-label-future{% endif %}"
+                      style="font-size:.72rem;max-width:80px;">
                     {{ s_label }}
                 </span>
             </div>
@@ -59,7 +66,7 @@
     <!-- ── Info principal ── -->
     <div class="col-md-7">
         <div class="card border-0 shadow-sm h-100">
-            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+            <div class="card-header py-2 px-3" style="background:#F4ECF1;">
                 <span class="fw-bold text-danger">
                     {% if appt.promotion_name %}
                     <i class="bi bi-tag-fill me-1"></i>COMBO: {{ appt.promotion_name }}
@@ -118,7 +125,7 @@
     <!-- ── Pago ── -->
     <div class="col-md-5">
         <div class="card border-0 shadow-sm">
-            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+            <div class="card-header py-2 px-3" style="background:#F4ECF1;">
                 <span class="fw-bold text-danger"><i class="bi bi-credit-card me-1"></i>Información de Pago</span>
             </div>
             <div class="card-body small">
@@ -183,7 +190,7 @@
 
         {% if appt.status == 'cancelada' and appt.cancel_reason %}
         <div class="card border-0 shadow-sm mt-3">
-            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+            <div class="card-header py-2 px-3" style="background:#F4ECF1;">
                 <span class="fw-bold text-danger"><i class="bi bi-chat-left-text me-1"></i>Motivo de Cancelación</span>
             </div>
             <div class="card-body small text-muted">
@@ -195,7 +202,7 @@
         <!-- Encuesta de satisfacción -->
         {% if appt.status == 'completada' %}
         <div class="card border-0 shadow-sm mt-3">
-            <div class="card-header py-2 px-3" style="background:#fce4ec;">
+            <div class="card-header py-2 px-3" style="background:#F4ECF1;">
                 <span class="fw-bold text-danger"><i class="bi bi-star me-1"></i>Mi Experiencia</span>
             </div>
             <div class="card-body">

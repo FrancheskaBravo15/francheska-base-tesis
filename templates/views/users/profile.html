@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}Mi Perfil - Shirley Buenaño{% endblock %}
 
 {% block body %}
@@ -11,15 +11,15 @@
                 {% if current_user.profile_photo %}
                     <img src="{{ current_user.profile_photo }}" alt="Foto de perfil"
                          class="rounded-circle mb-3 border border-3"
-                         style="width:120px;height:120px;object-fit:cover;border-color:#c2185b!important;">
+                         style="width:120px;height:120px;object-fit:cover;border-color:#7C4A6B!important;">
                 {% else %}
                     <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3 border border-3"
-                         style="width:120px;height:120px;background:#fce4ec;border-color:#c2185b!important;">
+                         style="width:120px;height:120px;background:#F4ECF1;border-color:#7C4A6B!important;">
                         <i class="bi bi-person-fill text-danger" style="font-size:3.5rem;"></i>
                     </div>
                 {% endif %}
                 <h5 class="fw-bold mb-1">{{ current_user.first_name }} {{ current_user.last_name }}</h5>
-                <span class="badge mb-2" style="background-color:#c2185b;">{{ current_user.role }}</span>
+                <span class="badge mb-2" style="background-color:#7C4A6B;">{{ current_user.role }}</span>
                 <p class="text-muted small mb-0"><i class="bi bi-envelope me-1"></i>{{ current_user.email }}</p>
                 {% if current_user.phone %}
                 <p class="text-muted small mb-0 mt-1"><i class="bi bi-telephone me-1"></i>{{ current_user.phone }}</p>
@@ -53,7 +53,7 @@
     <!-- Columna derecha: formulario de edición -->
     <div class="col-lg-8">
         <div class="card shadow-sm border-0">
-            <div class="card-header" style="background-color:#c2185b;">
+            <div class="card-header" style="background-color:#7C4A6B;">
                 <h5 class="mb-0 text-white"><i class="bi bi-pencil-square me-2"></i>Editar Perfil</h5>
             </div>
             <div class="card-body">

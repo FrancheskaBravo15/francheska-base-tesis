@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}{{ promotion.name }} - Shirley Buenaño{% endblock %}
 
 {% block body %}
@@ -15,8 +15,8 @@
                      style="height:280px;object-fit:cover;">
             {% else %}
                 <div class="d-flex align-items-center justify-content-center"
-                     style="height:200px;background:linear-gradient(135deg,#fce4ec,#f8bbd0);">
-                    <i class="bi bi-gift" style="font-size:4rem;color:#c2185b;"></i>
+                     style="height:200px;background:linear-gradient(135deg,#F4ECF1,#E8D5E4);">
+                    <i class="bi bi-gift" style="font-size:4rem;color:#7C4A6B;"></i>
                 </div>
             {% endif %}
 
@@ -24,7 +24,7 @@
                 <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
                     <h3 class="fw-bold mb-0">{{ promotion.name }}</h3>
                     {% if promotion.original_price and promotion.original_price > promotion.promo_price %}
-                    <span class="badge fs-6 px-3 py-2" style="background-color:#c2185b;">
+                    <span class="badge fs-6 px-3 py-2" style="background-color:#7C4A6B;">
                         {{ "%.0f"|format(((promotion.original_price - promotion.promo_price) / promotion.original_price) * 100) }}% de descuento
                     </span>
                     {% endif %}
@@ -45,7 +45,7 @@
                                      style="object-fit:cover;" alt="{{ svc.name }}">
                             {% else %}
                                 <div class="rounded d-flex align-items-center justify-content-center"
-                                     style="width:50px;height:50px;background:#fce4ec;">
+                                     style="width:50px;height:50px;background:#F4ECF1;">
                                     <i class="bi bi-scissors text-danger"></i>
                                 </div>
                             {% endif %}
@@ -96,7 +96,7 @@
                             Ahorras: ${{ "%.2f"|format(promotion.original_price - promotion.promo_price) }}
                         </div>
                         {% endif %}
-                        <div class="fw-bold" style="font-size:1.8rem;color:#c2185b;">
+                        <div class="fw-bold" style="font-size:1.8rem;color:#7C4A6B;">
                             ${{ "%.2f"|format(promotion.promo_price) }}
                         </div>
                     </div>
@@ -122,7 +122,7 @@
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
 
-            <div class="modal-header" style="background:linear-gradient(90deg,#c2185b,#e91e63);">
+            <div class="modal-header" style="background:linear-gradient(90deg,#7C4A6B,#7C4A6B);">
                 <div>
                     <h5 class="modal-title text-white fw-bold mb-0">
                         <i class="bi bi-calendar-plus me-2"></i>Reservar Combo
@@ -186,15 +186,17 @@
 
 <!-- Datos de la promoción para JS -->
 <script id="promo-services-data" type="application/json">{{ services_json | safe }}</script>
+<script id="promo-meta" type="application/json">{{ {"id": promotion.id, "name": promotion.name, "price": promotion.promo_price, "csrf": csrf_token()} | tojson }}</script>
 
 {% block extra_js %}
 <script>
 (function () {
     const SERVICES    = JSON.parse(document.getElementById('promo-services-data').textContent);
-    const PROMO_ID    = {{ promotion.id | tojson }};
-    const PROMO_NAME  = {{ promotion.name | tojson }};
-    const PROMO_PRICE = {{ promotion.promo_price }};
-    const CSRF_TOKEN  = {{ csrf_token() | tojson }};
+    const _meta       = JSON.parse(document.getElementById('promo-meta').textContent);
+    const PROMO_ID    = _meta.id;
+    const PROMO_NAME  = _meta.name;
+    const PROMO_PRICE = _meta.price;
+    const CSRF_TOKEN  = _meta.csrf;
 
     let currentStep = 0;
     const selections = SERVICES.map(() => ({
@@ -219,7 +221,7 @@
             const pip = document.createElement('div');
             pip.id        = `pip-${i}`;
             pip.className = 'rounded-circle d-flex align-items-center justify-content-center fw-bold';
-            pip.style.cssText = 'width:28px;height:28px;font-size:.75rem;border:2px solid #c2185b;color:#c2185b;background:#fff;transition:all .2s;';
+            pip.style.cssText = 'width:28px;height:28px;font-size:.75rem;border:2px solid #7C4A6B;color:#7C4A6B;background:#fff;transition:all .2s;';
             pip.textContent = i + 1;
             pipsWrap.appendChild(pip);
             if (i < SERVICES.length - 1) {
@@ -240,7 +242,7 @@
             const minDate = tomorrow.toISOString().split('T')[0];
 
             panel.innerHTML = `
-                <div class="d-flex align-items-center gap-3 p-3 rounded-3 mb-4" style="background:#fce4ec;">
+                <div class="d-flex align-items-center gap-3 p-3 rounded-3 mb-4" style="background:#F4ECF1;">
                     <i class="bi bi-scissors text-danger fs-4"></i>
                     <div>
                         <div class="fw-bold">${svc.name}</div>
@@ -384,16 +386,16 @@
             const pip = document.getElementById(`pip-${i}`);
             if (!pip) return;
             if (i < activeIdx) {
-                pip.style.background = '#c2185b';
+                pip.style.background = '#7C4A6B';
                 pip.style.color      = '#fff';
                 pip.innerHTML = '<i class="bi bi-check" style="font-size:.8rem;"></i>';
             } else if (i === activeIdx) {
-                pip.style.background = '#c2185b';
+                pip.style.background = '#7C4A6B';
                 pip.style.color      = '#fff';
                 pip.textContent = i + 1;
             } else {
                 pip.style.background = '#fff';
-                pip.style.color      = '#c2185b';
+                pip.style.color      = '#7C4A6B';
                 pip.textContent = i + 1;
             }
         });

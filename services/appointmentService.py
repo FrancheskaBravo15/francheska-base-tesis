@@ -139,8 +139,8 @@ class AppointmentService:
             if not worker or worker.id != appt.worker_id:
                 return {"success": False, "message": "No tienes permiso para reagendar esta cita"}
 
-            if appt.status != "confirmada":
-                return {"success": False, "message": "Solo se pueden reagendar citas confirmadas"}
+            if appt.status not in ("confirmada", "en_curso"):
+                return {"success": False, "message": "Solo se pueden reagendar citas confirmadas o en curso"}
 
             if not proposed_date or not proposed_start_time:
                 return {"success": False, "message": "Debe indicar la nueva fecha y hora"}

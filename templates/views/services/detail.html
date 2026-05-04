@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}{{ service.name }} - Shirley Buenaño{% endblock %}
 
 {% block body %}
@@ -15,7 +15,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
                     <div>
-                        <span class="badge mb-2" style="background-color:#c2185b;">{{ service.category }}</span>
+                        <span class="badge mb-2" style="background-color:#7C4A6B;">{{ service.category }}</span>
                         <h3 class="fw-bold mb-1">{{ service.name }}</h3>
                         <!-- Rating -->
                         <div class="d-flex align-items-center gap-2">
@@ -36,7 +36,7 @@
                 {% endif %}
 
                 <!-- Consejos del servicio -->
-                <div class="alert border-0 mt-3" style="background-color:#fce4ec;">
+                <div class="alert border-0 mt-3" style="background-color:#F4ECF1;">
                     <h6 class="fw-bold mb-2"><i class="bi bi-lightbulb me-2 text-danger"></i>Consejos para tu cita</h6>
                     <ul class="mb-0 small">
                         <li>Duración estimada del servicio: <strong>{{ service.duration_minutes }} minutos</strong>. Llega 5 minutos antes.</li>
@@ -69,7 +69,7 @@
         <!-- Sección de Reserva -->
         {% if current_user and current_user.role == 'client' %}
         <div class="card border-0 shadow-sm mb-4">
-            <div class="card-header" style="background-color:#c2185b;">
+            <div class="card-header" style="background-color:#7C4A6B;">
                 <h5 class="mb-0 text-white"><i class="bi bi-calendar-plus me-2"></i>Reservar este Servicio</h5>
             </div>
             <div class="card-body">
@@ -122,7 +122,7 @@
             </div>
         </div>
         {% elif not current_user %}
-        <div class="alert border-0" style="background-color:#fce4ec;">
+        <div class="alert border-0" style="background-color:#F4ECF1;">
             <i class="bi bi-lock me-2 text-danger"></i>
             <a href="{{ url_for('users.login') }}" class="text-danger fw-semibold">Inicia sesión</a>
             para reservar este servicio o
@@ -267,7 +267,7 @@
 
         <!-- Resumen -->
         <div class="card border-0 shadow-sm mb-3">
-            <div class="card-header" style="background-color:#c2185b;">
+            <div class="card-header" style="background-color:#7C4A6B;">
                 <h6 class="mb-0 text-white"><i class="bi bi-info-circle me-2"></i>Resumen del Servicio</h6>
             </div>
             <div class="card-body">

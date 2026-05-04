@@ -338,14 +338,16 @@ class WorkerService:
                 service = ServiceRepository.find_by_id(a.service_id)
                 client_person = PR.find_by_user_id(a.client_id)
                 entry = {
-                    "appointment_id": a.id,
-                    "date":           a.date,
-                    "start_time":     a.start_time,
-                    "end_time":       a.end_time,
-                    "service_name":   service.name if service else "N/A",
-                    "client_name":    f"{client_person.first_name} {client_person.last_name}" if client_person else "N/A",
-                    "total_price":    a.total_price,
-                    "status":         a.status
+                    "appointment_id":  a.id,
+                    "date":            a.date,
+                    "start_time":      a.start_time,
+                    "end_time":        a.end_time,
+                    "service_name":    service.name if service else "N/A",
+                    "client_name":     f"{client_person.first_name} {client_person.last_name}" if client_person else "N/A",
+                    "total_price":     a.total_price,
+                    "status":          a.status,
+                    "promotion_id":    a.promotion_id,
+                    "promotion_name":  a.promotion_name,
                 }
                 history.append(entry)
                 if a.status == "completada":

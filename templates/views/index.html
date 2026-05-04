@@ -1,17 +1,17 @@
-{% extends 'base.html' %} {% block title %}Inicio - Centro de Estética Shirley Buenaño{% endblock %} {% block body %}
+﻿{% extends 'base.html' %} {% block title %}Inicio - Centro de Estética Shirley Buenaño{% endblock %} {% block body %}
 
 <!-- Hero -->
-<div class="rounded-4 text-white text-center p-5 mb-5" style="background: linear-gradient(rgba(246,7,80,0.3),rgba(246,87,90,0.3)), linear-gradient(1deg,#f7f6f6,#f66bb4);">
+<div class="rounded-4 text-center p-5 mb-5 sb-hero-light">
     <h1 class="display-5 fw-bold mb-3">
         <i class="bi bi-stars me-2"></i>Bienvenida a Shirley Buenaño
     </h1>
     <p class="lead mb-4">Centro de Estética, Belleza y Moda. Reserva tu cita en minutos y luce radiante.</p>
     <div class="d-flex justify-content-center gap-3 flex-wrap">
-        <a href="{{ url_for('services.catalog') }}" class="btn btn-light btn-lg px-4 shadow-sm">
+        <a href="{{ url_for('services.catalog') }}" class="btn btn-danger btn-lg px-4 shadow-sm">
             <i class="bi bi-scissors me-2"></i>Ver Servicios
         </a>
         {% if not current_user %}
-        <a href="{{ url_for('users.register') }}" class="btn btn-outline-light btn-lg px-4 shadow-sm">
+        <a href="{{ url_for('users.register') }}" class="btn btn-outline-danger btn-lg px-4 shadow-sm">
             <i class="bi bi-person-plus me-2"></i>Crear Cuenta
         </a>
         {% endif %}
@@ -46,13 +46,13 @@
                 <img src="{{ promo.image_url }}" class="d-block w-100"
                      alt="{{ promo.name }}" style="height:360px;object-fit:cover;">
                 {% else %}
-                <div style="height:360px;background:linear-gradient(135deg,#c2185b,#e91e63);"></div>
+                <div style="height:360px;background:linear-gradient(135deg,#7C4A6B,#7C4A6B);"></div>
                 {% endif %}
 
                 <!-- Overlay con info -->
                 <div class="carousel-caption d-flex flex-column align-items-center justify-content-center h-100"
                      style="background:rgba(0,0,0,0.45);inset:0;position:absolute;border-radius:.5rem;">
-                    <span class="badge mb-2 px-3 py-2 fs-6" style="background-color:#c2185b;">
+                    <span class="badge mb-2 px-3 py-2 fs-6" style="background-color:#7C4A6B;">
                         <i class="bi bi-tag-fill me-1"></i>
                         {% if promo.original_price and promo.original_price > promo.promo_price %}
                             {{ "%.0f"|format(((promo.original_price - promo.promo_price) / promo.original_price) * 100) }}% OFF
@@ -113,7 +113,7 @@
                                          class="cat-card-img">
                                 {% else %}
                                     <div class="w-100 h-100"
-                                         style="background:linear-gradient(135deg,#c2185b,#e91e63);"></div>
+                                         style="background:linear-gradient(135deg,#7C4A6B,#7C4A6B);"></div>
                                 {% endif %}
                                 <!-- Overlay degradado -->
                                 <div class="position-absolute bottom-0 start-0 end-0"
@@ -139,11 +139,11 @@
         <!-- Controles personalizados -->
         <button class="carousel-control-prev cat-carousel-btn" type="button"
                 data-bs-target="#catCarousel" data-bs-slide="prev">
-            <i class="bi bi-chevron-left" style="font-size:1.4rem;color:#c2185b;"></i>
+            <i class="bi bi-chevron-left" style="font-size:1.4rem;color:#7C4A6B;"></i>
         </button>
         <button class="carousel-control-next cat-carousel-btn" type="button"
                 data-bs-target="#catCarousel" data-bs-slide="next">
-            <i class="bi bi-chevron-right" style="font-size:1.4rem;color:#c2185b;"></i>
+            <i class="bi bi-chevron-right" style="font-size:1.4rem;color:#7C4A6B;"></i>
         </button>
         {% endif %}
     </div>
@@ -155,7 +155,7 @@
         {% for p in range(cat_pages) %}
         <button type="button" data-bs-target="#catCarousel" data-bs-slide-to="{{ p }}"
                 class="rounded-circle border-0 {% if p == 0 %}cat-dot-active{% endif %} cat-dot"
-                style="width:10px;height:10px;padding:0;background-color:{% if p == 0 %}#c2185b{% else %}#ddd{% endif %};">
+                style="width:10px;height:10px;padding:0;background-color:{% if p == 0 %}#7C4A6B{% else %}#ddd{% endif %};">
         </button>
         {% endfor %}
     </div>
@@ -179,12 +179,12 @@
             {% if service.image_url %}
             <img src="{{ service.image_url }}" class="card-img-top" alt="{{ service.name }}" style="height:180px;object-fit:cover;">
             {% else %}
-            <div class="d-flex align-items-center justify-content-center" style="height:180px;background-color:#f3e5f5;">
+            <div class="d-flex align-items-center justify-content-center" style="height:180px;background-color:#ECEAF5;">
                 <i class="bi bi-scissors text-primary" style="font-size:3rem;"></i>
             </div>
             {% endif %}
             <div class="card-body">
-                <span class="badge mb-2" style="background-color:#b388ff;">{{ service.category }}</span>
+                <span class="badge mb-2" style="background-color:#8B7FC0;">{{ service.category }}</span>
                 <h6 class="card-title fw-bold">{{ service.name }}</h6>
                 <p class="card-text text-muted small">
                     {{ service.description[:80] if service.description else '' }}{% if service.description and service.description|length > 80 %}...{% endif %}

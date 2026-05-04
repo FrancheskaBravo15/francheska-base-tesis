@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}{% if promotion %}Editar{% else %}Nueva{% endif %} Promoción - Admin{% endblock %}
 
 {% block body %}
@@ -190,7 +190,7 @@
             if (!svc) return;
             const badge = document.createElement('span');
             badge.className = 'badge d-inline-flex align-items-center gap-1 px-2 py-1';
-            badge.style.cssText = 'background-color:#c2185b;font-size:.85rem;';
+            badge.style.cssText = 'background-color:#7C4A6B;font-size:.85rem;';
             badge.innerHTML = `${svc.name} <button type="button" class="btn-close btn-close-white ms-1" style="font-size:.5rem;" aria-label="Quitar"></button>`;
             badge.querySelector('button').addEventListener('click', () => {
                 selected.delete(id);
@@ -240,7 +240,7 @@
                 renderBadges();
                 renderList(searchInput.value);
             });
-            row.addEventListener('mouseenter', () => row.style.background = '#fce4ec');
+            row.addEventListener('mouseenter', () => row.style.background = '#F4ECF1');
             row.addEventListener('mouseleave', () => row.style.background = '');
             listWrap.appendChild(row);
         });
