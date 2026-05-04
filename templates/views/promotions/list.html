@@ -51,6 +51,18 @@
                 </div>
 
                 <div class="mt-auto">
+                    <!-- Vigencia -->
+                    {% if promo.end_datetime %}
+                    <div class="d-flex align-items-center gap-1 mb-2 small text-muted">
+                        <i class="bi bi-clock text-danger"></i>
+                        Válido hasta: <strong>{{ promo.end_datetime.strftime('%d/%m/%Y %H:%M') }}</strong>
+                    </div>
+                    {% elif promo.start_datetime %}
+                    <div class="d-flex align-items-center gap-1 mb-2 small text-muted">
+                        <i class="bi bi-calendar-check text-success"></i>
+                        Desde: <strong>{{ promo.start_datetime.strftime('%d/%m/%Y %H:%M') }}</strong>
+                    </div>
+                    {% endif %}
                     <!-- Precios -->
                     <div class="d-flex align-items-center gap-2 mb-3">
                         {% if promo.original_price and promo.original_price > promo.promo_price %}

@@ -28,6 +28,17 @@ class CartService:
     def add_to_cart(user_id: str, service_id: str, worker_id: str,
                     date: str, start_time: str) -> Dict:
         try:
+            from datetime import datetime as _dt
+            date = date.replace("/", "-") if date else date
+
+            # Validar que la fecha/hora sea futura
+            now = _dt.now()
+            today_str = now.strftime("%Y-%m-%d")
+            if date < today_str:
+                return {"success": False, "message": "No puedes reservar en una fecha pasada"}
+            if date == today_str and _time_to_minutes(start_time) <= now.hour * 60 + now.minute:
+                return {"success": False, "message": "Esa hora ya pasó, elige un horario futuro"}
+
             service = ServiceRepository.find_by_id(service_id)
             if not service or not service.is_active:
                 return {"success": False, "message": "Servicio no disponible"}
@@ -35,6 +46,9 @@ class CartService:
             worker = WorkerRepository.find_by_id(worker_id)
             if not worker or not worker.is_active:
                 return {"success": False, "message": "Trabajadora no disponible"}
+
+            if service.category not in worker.specialties:
+                return {"success": False, "message": "La especialista no ofrece ese servicio"}
 
             # Calcular end_time
             start_mins = _time_to_minutes(start_time)
@@ -218,8 +232,20 @@ class CartService:
                 if existing.promotion_id == promotion_id:
                     return {"success": False, "message": "Esta promoción ya está en el carrito"}
 
+            from datetime import datetime as _dt
+            now       = _dt.now()
+            today_str = now.strftime("%Y-%m-%d")
+
             new_items = []
             for i, sel in enumerate(selections):
+                sel_date = (sel.get("date") or "").replace("/", "-")
+
+                # Validar que la fecha/hora sea futura
+                if sel_date < today_str:
+                    return {"success": False, "message": "No puedes reservar en una fecha pasada"}
+                if sel_date == today_str and _time_to_minutes(sel["start_time"]) <= now.hour * 60 + now.minute:
+                    return {"success": False, "message": "Esa hora ya pasó, elige un horario futuro"}
+
                 service = ServiceRepository.find_by_id(sel["service_id"])
                 if not service or not service.is_active:
                     return {"success": False, "message": "Un servicio de la promoción no está disponible"}
@@ -228,10 +254,13 @@ class CartService:
                 if not worker or not worker.is_active:
                     return {"success": False, "message": "Una especialista seleccionada no está disponible"}
 
+                if service.category not in worker.specialties:
+                    return {"success": False, "message": f"La especialista no ofrece '{service.name}'"}
+
                 start_mins = _time_to_minutes(sel["start_time"])
                 end_time   = _minutes_to_time(start_mins + service.duration_minutes)
 
-                if AppointmentRepository.has_conflict(sel["worker_id"], sel["date"], sel["start_time"], end_time):
+                if AppointmentRepository.has_conflict(sel["worker_id"], sel_date, sel["start_time"], end_time):
                     return {"success": False, "message": f"La especialista no tiene disponibilidad para '{service.name}' en ese horario"}
 
                 worker_person = PersonRepository.find_by_user_id(worker.user_id)
@@ -242,7 +271,7 @@ class CartService:
                     service_name   = service.name,
                     worker_id      = sel["worker_id"],
                     worker_name    = worker_name,
-                    date           = sel["date"],
+                    date           = sel_date,
                     start_time     = sel["start_time"],
                     end_time       = end_time,
                     price          = first_item_price if i == 0 else per_item,

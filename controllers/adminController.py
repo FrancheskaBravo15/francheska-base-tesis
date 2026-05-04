@@ -482,12 +482,14 @@ def create_promotion():
     upload_folder = _upload_folder_promotions(current_app)
     os.makedirs(upload_folder, exist_ok=True)
     result = PromotionService.create_promotion(
-        name=request.form.get('name', '').strip(),
-        description=request.form.get('description', '').strip(),
-        service_ids=request.form.getlist('service_ids'),
-        promo_price=request.form.get('promo_price', '0'),
-        image_file=request.files.get('image'),
-        upload_folder=upload_folder
+        name           = request.form.get('name', '').strip(),
+        description    = request.form.get('description', '').strip(),
+        service_ids    = request.form.getlist('service_ids'),
+        promo_price    = request.form.get('promo_price', '0'),
+        image_file     = request.files.get('image'),
+        upload_folder  = upload_folder,
+        start_datetime = request.form.get('start_datetime', '').strip(),
+        end_datetime   = request.form.get('end_datetime', '').strip(),
     )
     flash(result["message"], 'success' if result["success"] else 'danger')
     if result["success"]:
@@ -528,14 +530,16 @@ def edit_promotion(promo_id):
     os.makedirs(upload_folder, exist_ok=True)
     is_active = request.form.get('is_active') == 'on'
     result = PromotionService.update_promotion(
-        promo_id=promo_id,
-        name=request.form.get('name', '').strip(),
-        description=request.form.get('description', '').strip(),
-        service_ids=request.form.getlist('service_ids'),
-        promo_price=request.form.get('promo_price', '0'),
-        is_active=is_active,
-        image_file=request.files.get('image'),
-        upload_folder=upload_folder
+        promo_id       = promo_id,
+        name           = request.form.get('name', '').strip(),
+        description    = request.form.get('description', '').strip(),
+        service_ids    = request.form.getlist('service_ids'),
+        promo_price    = request.form.get('promo_price', '0'),
+        is_active      = is_active,
+        image_file     = request.files.get('image'),
+        upload_folder  = upload_folder,
+        start_datetime = request.form.get('start_datetime', '').strip(),
+        end_datetime   = request.form.get('end_datetime', '').strip(),
     )
     flash(result["message"], 'success' if result["success"] else 'danger')
     if result["success"]:

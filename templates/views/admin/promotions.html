@@ -24,6 +24,7 @@
                         <th>Servicios</th>
                         <th>Precio Promo</th>
                         <th>Precio Normal</th>
+                        <th>Vigencia</th>
                         <th>Estado</th>
                         <th class="text-center pe-3">Acciones</th>
                     </tr>
@@ -55,6 +56,33 @@
                         </td>
                         <td class="fw-semibold text-danger">${{ "%.2f"|format(promo.promo_price) }}</td>
                         <td class="text-muted text-decoration-line-through small">${{ "%.2f"|format(promo.original_price) }}</td>
+                        <td class="small">
+                            {% if promo.start_datetime or promo.end_datetime %}
+                                <div class="text-muted">
+                                    {% if promo.start_datetime %}
+                                        <i class="bi bi-play-fill text-success"></i> {{ promo.start_datetime.strftime('%d/%m/%Y %H:%M') }}
+                                    {% else %}
+                                        <i class="bi bi-play-fill text-success"></i> Inmediato
+                                    {% endif %}
+                                </div>
+                                <div class="text-muted">
+                                    {% if promo.end_datetime %}
+                                        <i class="bi bi-stop-fill text-danger"></i> {{ promo.end_datetime.strftime('%d/%m/%Y %H:%M') }}
+                                    {% else %}
+                                        <i class="bi bi-stop-fill text-danger"></i> Sin expiración
+                                    {% endif %}
+                                </div>
+                                {% if promo.vigencia_status == 'vigente' %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle mt-1">Vigente</span>
+                                {% elif promo.vigencia_status == 'por_iniciar' %}
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle mt-1">Por iniciar</span>
+                                {% elif promo.vigencia_status == 'expirada' %}
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle mt-1">Expirada</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted fst-italic">Sin límite</span>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if promo.is_active %}
                                 <span class="badge bg-success-subtle text-success border border-success-subtle">Activa</span>
@@ -79,7 +107,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-5">
+                        <td colspan="7" class="text-center text-muted py-5">
                             <i class="bi bi-tag" style="font-size:2rem;"></i>
                             <p class="mt-2 mb-0">No hay promociones. <a href="{{ url_for('admin.create_promotion') }}">Crear primera</a></p>
                         </td>

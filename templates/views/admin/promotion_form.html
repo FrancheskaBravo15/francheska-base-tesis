@@ -93,6 +93,25 @@
                         </div>
                     </div>
 
+                    <!-- Vigencia -->
+                    <div class="card border-0 bg-light rounded-3 p-3 mb-3">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-calendar-range me-2 text-danger"></i>Período de Vigencia <span class="text-muted fw-normal small">(opcional)</span></h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small">Inicio de la promoción</label>
+                                <input type="datetime-local" class="form-control" name="start_datetime"
+                                       value="{% if promotion and promotion.start_datetime %}{{ promotion.start_datetime.strftime('%Y-%m-%dT%H:%M') }}{% elif form_data %}{{ form_data.get('start_datetime', '') }}{% endif %}">
+                                <div class="form-text">Si se deja en blanco, la promoción estará disponible de inmediato.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small">Fin de la promoción</label>
+                                <input type="datetime-local" class="form-control" name="end_datetime"
+                                       value="{% if promotion and promotion.end_datetime %}{{ promotion.end_datetime.strftime('%Y-%m-%dT%H:%M') }}{% elif form_data %}{{ form_data.get('end_datetime', '') }}{% endif %}">
+                                <div class="form-text">Si se deja en blanco, la promoción no expira automáticamente.</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Imagen del Combo</label>
                         {% if promotion and promotion.image_url %}

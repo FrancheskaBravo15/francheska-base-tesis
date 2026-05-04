@@ -61,6 +61,30 @@
                     {% endfor %}
                 </div>
 
+                <!-- Vigencia -->
+                {% if promotion.start_datetime or promotion.end_datetime %}
+                <div class="d-flex flex-wrap gap-3 mb-3 pt-3 border-top">
+                    {% if promotion.start_datetime %}
+                    <div class="d-flex align-items-center gap-2 small">
+                        <i class="bi bi-play-circle-fill text-success fs-5"></i>
+                        <div>
+                            <div class="text-muted">Inicio de la oferta</div>
+                            <div class="fw-semibold">{{ promotion.start_datetime.strftime('%d/%m/%Y a las %H:%M') }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if promotion.end_datetime %}
+                    <div class="d-flex align-items-center gap-2 small">
+                        <i class="bi bi-stop-circle-fill text-danger fs-5"></i>
+                        <div>
+                            <div class="text-muted">Fin de la oferta</div>
+                            <div class="fw-semibold">{{ promotion.end_datetime.strftime('%d/%m/%Y a las %H:%M') }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
                 <!-- Precio y acción -->
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 pt-3 border-top">
                     <div>

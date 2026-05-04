@@ -230,6 +230,8 @@ class WorkerService:
         Retorna lista de {'start': 'HH:MM', 'end': 'HH:MM'} disponibles.
         """
         try:
+            date_str = date_str.replace("/", "-")
+
             worker = WorkerRepository.find_by_id(worker_id)
             if not worker or not worker.is_active:
                 return {"success": False, "slots": [], "message": "Trabajadora no disponible"}
@@ -239,17 +241,32 @@ class WorkerService:
                 return {"success": False, "slots": [], "message": "La trabajadora no tiene esa especialidad"}
 
             # Obtener el día de la semana
-            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-            # 0=Lunes, 1=Martes ... 6=Domingo
+            date_obj  = datetime.strptime(date_str, "%Y-%m-%d")
+            now       = datetime.now()
             day_index = date_obj.weekday()
             day_name  = DAYS_OF_WEEK[day_index]
+
+            # Rechazar fechas pasadas
+            if date_obj.date() < now.date():
+                return {"success": True, "slots": [], "message": "No se pueden reservar fechas pasadas"}
 
             if day_name not in worker.availability or not worker.availability[day_name]:
                 return {"success": True, "slots": [], "message": "La trabajadora no labora ese día"}
 
-            # Citas ya reservadas ese día
+            # Minutos actuales del día — usados para filtrar horas pasadas cuando la fecha es hoy
+            current_minutes = now.hour * 60 + now.minute if date_obj.date() == now.date() else -1
+
+            # Citas ya reservadas ese día (por fecha real)
             booked = AppointmentRepository.find_by_worker_and_date(worker_id, date_str)
             booked_ranges = [(_time_to_minutes(a.start_time), _time_to_minutes(a.end_time)) for a in booked]
+
+            # También bloquear los horarios propuestos en reagendamientos pendientes
+            proposed = AppointmentRepository.find_proposed_by_worker_and_date(worker_id, date_str)
+            booked_ranges.extend([
+                (_time_to_minutes(a.proposed_start_time), _time_to_minutes(a.proposed_end_time))
+                for a in proposed
+                if a.proposed_start_time and a.proposed_end_time
+            ])
 
             slots = []
             step  = 30  # granularidad en minutos
@@ -261,6 +278,10 @@ class WorkerService:
                 while t + duration_minutes <= range_end:
                     slot_start = t
                     slot_end   = t + duration_minutes
+                    # Omitir slots que ya comenzaron o pasaron (solo si es hoy)
+                    if slot_start <= current_minutes:
+                        t += step
+                        continue
                     # Verificar que no choca con ninguna cita reservada
                     conflict = any(
                         not (slot_end <= bs or slot_start >= be)
