@@ -17,6 +17,8 @@ def catalog():
     if category:
         services = [s for s in services if s["category"] == category]
 
+    services = sorted(services, key=lambda s: s["category"])
+
     # Agregar rating promedio a cada servicio
     for s in services:
         try:

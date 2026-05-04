@@ -7,11 +7,11 @@
     </h1>
     <p class="lead mb-4">Centro de Estética, Belleza y Moda. Reserva tu cita en minutos y luce radiante.</p>
     <div class="d-flex justify-content-center gap-3 flex-wrap">
-        <a href="{{ url_for('services.catalog') }}" class="btn btn-danger btn-lg px-4 shadow-sm">
+        <a href="{{ url_for('services.catalog') }}" class="btn btn-hero btn-lg px-4 shadow-sm">
             <i class="bi bi-scissors me-2"></i>Ver Servicios
         </a>
         {% if not current_user %}
-        <a href="{{ url_for('users.register') }}" class="btn btn-outline-danger btn-lg px-4 shadow-sm">
+        <a href="{{ url_for('users.register') }}" class="btn btn-hero btn-lg px-4 shadow-sm">
             <i class="bi bi-person-plus me-2"></i>Crear Cuenta
         </a>
         {% endif %}
@@ -106,26 +106,30 @@
                     {% for cat in chunk %}
                     <div class="col-6 col-md-3">
                         <a href="{{ url_for('services.catalog', category=cat.name) }}" class="text-decoration-none">
-                            <div class="cat-card rounded-4 shadow overflow-hidden position-relative"
-                                 style="height:190px;">
+                            <div class="cat-card rounded-4 shadow overflow-hidden position-relative" style="height:190px;">
                                 {% if cat.image_url %}
-                                    <img src="{{ cat.image_url }}" alt="{{ cat.name }}"
-                                         class="cat-card-img">
+                                    <img src="{{ cat.image_url }}" alt="{{ cat.name }}" class="cat-card-img">
                                 {% else %}
-                                    <div class="w-100 h-100"
-                                         style="background:linear-gradient(135deg,#7C4A6B,#7C4A6B);"></div>
+                                    <div class="w-100 h-100" style="background:linear-gradient(135deg,var(--sb-primary-dark),var(--sb-primary));"></div>
                                 {% endif %}
-                                <!-- Overlay degradado -->
-                                <div class="position-absolute bottom-0 start-0 end-0"
+                                <!-- Overlay normal (nombre) -->
+                                <div class="cat-card-label position-absolute bottom-0 start-0 end-0"
                                      style="background:linear-gradient(transparent,rgba(0,0,0,0.72));padding:36px 12px 14px;">
                                     <p class="text-white fw-bold mb-0 text-center"
                                        style="font-size:1rem;text-shadow:0 1px 4px rgba(0,0,0,.5);">
                                         {{ cat.name }}
                                     </p>
                                 </div>
-                                <!-- Hover shimmer -->
-                                <div class="cat-card-hover position-absolute top-0 start-0 end-0 bottom-0 rounded-4"
-                                     style="background:rgba(194,24,91,0);transition:background .25s;"></div>
+                                <!-- Overlay hover (conteo) -->
+                                <div class="cat-card-info position-absolute top-0 start-0 end-0 bottom-0 rounded-4 d-flex flex-column align-items-center justify-content-center text-white text-center">
+                                    <p class="fw-bold mb-1" style="font-size:1rem;letter-spacing:.04em;">{{ cat.name }}</p>
+                                    <p class="mb-2 opacity-75" style="font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;">
+                                        {{ service_count.get(cat.name, 0) }} servicio{% if service_count.get(cat.name, 0) != 1 %}s{% endif %}
+                                    </p>
+                                    <span style="font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;border:1px solid rgba(255,255,255,.7);padding:.2rem .75rem;border-radius:20px;">
+                                        Ver ahora
+                                    </span>
+                                </div>
                             </div>
                         </a>
                     </div>
@@ -154,8 +158,7 @@
         {% set cat_pages = (categories|length / 4)|round(0,'ceil')|int %}
         {% for p in range(cat_pages) %}
         <button type="button" data-bs-target="#catCarousel" data-bs-slide-to="{{ p }}"
-                class="rounded-circle border-0 {% if p == 0 %}cat-dot-active{% endif %} cat-dot"
-                style="width:10px;height:10px;padding:0;background-color:{% if p == 0 %}#7C4A6B{% else %}#ddd{% endif %};">
+                class="cat-dot {% if p == 0 %}cat-dot-active{% endif %}">
         </button>
         {% endfor %}
     </div>
@@ -165,7 +168,7 @@
 
 <!-- ── SERVICIOS DESTACADOS ── -->
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0"><i class="bi bi-star me-2 text-primary"></i>Servicios Destacados</h4>
+    <h4 class="fw-bold mb-0"><i class="bi bi-star me-2 text-danger"></i>Servicios Destacados</h4>
     <a href="{{ url_for('services.catalog') }}" class="btn btn-outline-danger btn-sm">
         Ver todos <i class="bi bi-arrow-right ms-1"></i>
     </a>
@@ -179,22 +182,22 @@
             {% if service.image_url %}
             <img src="{{ service.image_url }}" class="card-img-top" alt="{{ service.name }}" style="height:180px;object-fit:cover;">
             {% else %}
-            <div class="d-flex align-items-center justify-content-center" style="height:180px;background-color:#ECEAF5;">
-                <i class="bi bi-scissors text-primary" style="font-size:3rem;"></i>
+            <div class="d-flex align-items-center justify-content-center" style="height:180px;background:linear-gradient(135deg,var(--sb-primary-dark),var(--sb-primary));">
+                <i class="bi bi-scissors text-white" style="font-size:3rem;opacity:.5;"></i>
             </div>
             {% endif %}
             <div class="card-body">
-                <span class="badge mb-2" style="background-color:#8B7FC0;">{{ service.category }}</span>
+                <span class="badge mb-2" style="background-color:var(--sb-primary);">{{ service.category }}</span>
                 <h6 class="card-title fw-bold">{{ service.name }}</h6>
                 <p class="card-text text-muted small">
                     {{ service.description[:80] if service.description else '' }}{% if service.description and service.description|length > 80 %}...{% endif %}
                 </p>
                 <div class="d-flex justify-content-between align-items-center mt-2">
                     <div>
-                        <span class="fw-bold" style="color:#ffd54f;">${{ "%.2f"|format(service.price) }}</span>
+                        <span class="fw-bold" style="color:var(--sb-primary);">${{ "%.2f"|format(service.price) }}</span>
                         <small class="text-muted d-block"><i class="bi bi-clock me-1"></i>{{ service.duration_minutes }} min</small>
                     </div>
-                    <a href="{{ url_for('services.detail', service_slug=service.slug) }}" class="btn btn-sm btn-outline-primary">
+                    <a href="{{ url_for('services.detail', service_slug=service.slug) }}" class="btn btn-sm btn-outline-danger">
                         <i class="bi bi-eye me-1"></i>Ver
                     </a>
                 </div>
@@ -208,7 +211,7 @@
     <i class="bi bi-scissors" style="font-size:3rem;"></i>
     <p class="mt-3">Próximamente agregaremos nuestros servicios.</p>
     {% if current_user and current_user.role == 'admin' %}
-    <a href="{{ url_for('admin.create_service') }}" class="btn btn-primary mt-2">
+    <a href="{{ url_for('admin.create_service') }}" class="btn btn-danger mt-2">
         <i class="bi bi-plus me-1"></i>Agregar Servicio
     </a>
     {% endif %}

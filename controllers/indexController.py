@@ -8,14 +8,20 @@ index_bp = Blueprint("index", __name__, url_prefix='/')
 
 @index_bp.route('/', methods=['GET'])
 def indexRoute():
-    result       = ServiceService.get_all_services(only_active=True)
-    services     = result.get("services", [])[:6]
+    all_services = ServiceService.get_all_services(only_active=True).get("services", [])
+    services     = all_services[:6]
     categories   = CategoryService.get_all_categories().get("categories", [])
     testimonials = TestimonialService.get_approved(limit=3).get("testimonials", [])
     promotions   = PromotionService.get_all_promotions(only_active=True).get("promotions", [])[:3]
+    # Conteo de servicios activos por categoría
+    service_count = {}
+    for s in all_services:
+        cat = s.get('category') if isinstance(s, dict) else s.category
+        if cat:
+            service_count[cat] = service_count.get(cat, 0) + 1
     return render_template('/views/index.html', services=services,
                            categories=categories, testimonials=testimonials,
-                           promotions=promotions)
+                           promotions=promotions, service_count=service_count)
 
 @index_bp.route('/about', methods=['GET'])
 def aboutRoute():

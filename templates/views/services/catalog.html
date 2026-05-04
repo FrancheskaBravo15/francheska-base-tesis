@@ -1,10 +1,7 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% block title %}Servicios - Shirley Buenaño{% endblock %}
 
 {% block body %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-bold mb-0"><i class="bi bi-scissors me-2 text-danger"></i>Nuestros Servicios</h3>
-</div>
 
 <!-- Filtro por categoría -->
 <div class="mb-4 d-flex gap-2 flex-wrap align-items-center">
@@ -14,74 +11,80 @@
         <i class="bi bi-grid-fill me-1"></i>Todas
     </a>
     {% for cat in categories %}
-        <a href="{{ url_for('services.catalog', category=cat.name) }}"
-           class="btn btn-sm {% if selected_category == cat.name %}btn-danger{% else %}btn-outline-secondary{% endif %}">
-            {{ cat.name }}
-        </a>
+    <a href="{{ url_for('services.catalog', category=cat.name) }}"
+       class="btn btn-sm {% if selected_category == cat.name %}btn-danger{% else %}btn-outline-secondary{% endif %}">
+        {{ cat.name }}
+    </a>
     {% endfor %}
 </div>
 
 {% if services %}
-    <div class="row g-4">
-        {% for service in services %}
-            <div class="col-sm-6 col-lg-4">
-                <div class="card h-100 shadow-sm border-0">
-                    <!-- Imagen -->
-                    {% if service.image_url %}
-                        <img src="{{ service.image_url }}" class="card-img-top" alt="{{ service.name }}"
-                             style="height:200px;object-fit:cover;">
-                    {% else %}
-                        <div class="d-flex align-items-center justify-content-center"
-                             style="height:200px;background-color:#F4ECF1;">
-                            <i class="bi bi-scissors text-danger" style="font-size:3.5rem;"></i>
-                        </div>
-                    {% endif %}
 
-                    <div class="card-body d-flex flex-column">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <span class="badge" style="background-color:#7C4A6B;">{{ service.category }}</span>
-                            {% if current_user and current_user.role == 'client' %}
-                                <form method="POST" action="{{ url_for('wishlist.toggle') }}" class="d-inline">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="service_id" value="{{ service.id }}">
-                                    <button class="btn btn-link p-0 text-decoration-none"
-                                            title="{% if service.id in wishlist_ids %}Quitar de favoritos{% else %}Agregar a favoritos{% endif %}">
-                                        <i class="bi bi-heart{% if service.id in wishlist_ids %}-fill text-danger{% else %} text-muted{% endif %}"
-                                           style="font-size:1.2rem;"></i>
-                                    </button>
-                                </form>
-                            {% endif %}
-                        </div>
+{% set ns = namespace(current_cat='') %}
+{% for service in services %}
 
-                        <h6 class="card-title fw-bold">{{ service.name }}</h6>
-                        <p class="card-text text-muted small flex-grow-1">
-                            {{ service.description[:100] if service.description else '' }}{% if service.description and service.description|length > 100 %}...{% endif %}
-                        </p>
+    {% if service.category != ns.current_cat %}
+        {% if not loop.first %}</div></div>{% endif %}
+        {% set ns.current_cat = service.category %}
+        <!-- Cabecera de categoría -->
+        <div class="sb-cat-section mb-5">
+        <div class="sb-cat-header mb-4">
+            <span>{{ service.category | upper }}</span>
+        </div>
+        <div class="row g-3">
+    {% endif %}
 
-                        <!-- Info del servicio -->
-                        <div class="row g-2 mb-3 small text-muted">
-                            <div class="col-6">
-                                <i class="bi bi-clock me-1"></i>{{ service.duration_minutes }} min
-                            </div>
-                            <div class="col-6 text-end">
-                                <span class="fw-bold text-danger fs-5">${{ "%.2f"|format(service.price) }}</span>
-                            </div>
-                        </div>
-
-                        <a href="{{ url_for('services.detail', service_slug=service.slug) }}"
-                           class="btn btn-outline-danger mt-auto">
-                            <i class="bi bi-calendar-plus me-2"></i>Ver y Reservar
-                        </a>
+    <!-- Tarjeta horizontal -->
+    <div class="col-md-6">
+        <div class="sb-service-hcard d-flex rounded-3 overflow-hidden shadow-sm">
+            <!-- Imagen -->
+            <div class="sb-hcard-img flex-shrink-0">
+                {% if service.image_url %}
+                <img src="{{ service.image_url }}" alt="{{ service.name }}">
+                {% else %}
+                <div class="sb-hcard-placeholder d-flex align-items-center justify-content-center">
+                    <i class="bi bi-scissors" style="font-size:2.5rem;color:rgba(255,255,255,.5);"></i>
+                </div>
+                {% endif %}
+            </div>
+            <!-- Info -->
+            <div class="sb-hcard-body p-3 d-flex flex-column flex-grow-1">
+                <h6 class="sb-hcard-title">{{ service.name | upper }}</h6>
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <div>
+                        <div class="sb-hcard-price">${{ "%.2f"|format(service.price) }}</div>
+                        <div class="sb-hcard-label">PRECIO</div>
+                    </div>
+                    <a href="{{ url_for('services.detail', service_slug=service.slug) }}"
+                       class="btn btn-danger btn-sm ms-auto sb-hcard-btn">
+                        RESERVAR AHORA
+                    </a>
+                </div>
+                <div class="d-flex gap-4 mb-2">
+                    <div>
+                        <div class="fw-bold small">{{ service.duration_minutes }} min</div>
+                        <div class="sb-hcard-label">DURACIÓN</div>
                     </div>
                 </div>
+                {% if service.description %}
+                <p class="sb-hcard-desc">{{ service.description[:80] }}{% if service.description|length > 80 %}...{% endif %}</p>
+                {% endif %}
+                <a href="{{ url_for('services.detail', service_slug=service.slug) }}"
+                   class="sb-hcard-link mt-auto">VER DETALLES DEL SERVICIO</a>
             </div>
-        {% endfor %}
+        </div>
     </div>
+
+    {% if loop.last %}</div></div>{% endif %}
+
+{% endfor %}
+
 {% else %}
-    <div class="text-center py-5 text-muted">
-        <i class="bi bi-search" style="font-size:3rem;"></i>
-        <p class="mt-3">No hay servicios en esta categoría.</p>
-        <a href="{{ url_for('services.catalog') }}" class="btn btn-outline-danger">Ver todos</a>
-    </div>
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-search" style="font-size:3rem;"></i>
+    <p class="mt-3">No hay servicios en esta categoría.</p>
+    <a href="{{ url_for('services.catalog') }}" class="btn btn-outline-danger">Ver todos</a>
+</div>
 {% endif %}
+
 {% endblock %}

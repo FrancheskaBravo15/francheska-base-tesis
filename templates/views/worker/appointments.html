@@ -21,7 +21,7 @@
     <button class="btn btn-sm filter-btn active" style="background-color:#8B7FC0; color:white;" data-filter="all">Todas</button>
     <button class="btn btn-sm btn-outline-success filter-btn" data-filter="confirmada">Confirmadas</button>
     <button class="btn btn-sm btn-outline-primary filter-btn" data-filter="en_curso">En Curso</button>
-    <button class="btn btn-sm filter-btn" style="border:1px solid #ffd54f; color:#4D4080;" data-filter="pendiente_reagenda">Reagendando</button>
+    <button class="btn btn-sm btn-outline-warning filter-btn" data-filter="pendiente_reagenda">Reagendando</button>
     <button class="btn btn-sm btn-outline-secondary filter-btn" data-filter="completada">Completadas</button>
     <button class="btn btn-sm filter-btn" style="border:1px solid #f48fb1; color:#f48fb1;" data-filter="cancelada">Canceladas</button>
 </div>
@@ -131,7 +131,7 @@
                             {% elif appt.status == 'pendiente_reagenda' %}
                                 <span class="text-muted small"
                                       title="Propuesta: {{ appt.proposed_date }} {{ appt.proposed_start_time }}">
-                                    <i class="bi bi-hourglass-split" style="color:#ffd54f;"></i>
+                                    <i class="bi bi-hourglass-split text-warning"></i>
                                     {{ appt.proposed_date }} {{ appt.proposed_start_time }}
                                 </span>
                             {% else %}
