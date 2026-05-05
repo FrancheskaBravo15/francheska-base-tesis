@@ -5,6 +5,7 @@ from repositories.serviceRepository import ServiceRepository
 from repositories.workerRepository import WorkerRepository
 from repositories.personRepository import PersonRepository
 from repositories.appointmentRepository import AppointmentRepository
+from repositories.promotionRepository import PromotionRepository
 from services.workerService import _time_to_minutes, _minutes_to_time, WorkerService
 
 class CartService:
@@ -221,6 +222,24 @@ class CartService:
         try:
             if not selections:
                 return {"success": False, "message": "No hay selecciones"}
+
+            # Verificar que la promoción existe y sigue vigente
+            promo = PromotionRepository.find_by_id(promotion_id)
+            if not promo:
+                return {"success": False, "message": "La promoción no existe"}
+            if not promo.is_currently_valid:
+                return {"success": False, "message": "Esta promoción ha expirado o aún no ha iniciado"}
+
+            # Validar que ninguna cita sea posterior a la fecha de fin de la promo
+            if promo.end_datetime:
+                end_date_str = promo.end_datetime.strftime("%Y-%m-%d")
+                for sel in selections:
+                    sel_date = (sel.get("date") or "").replace("/", "-")
+                    if sel_date > end_date_str:
+                        return {
+                            "success": False,
+                            "message": f"No puedes reservar después del {promo.end_datetime.strftime('%d/%m/%Y')}, fecha en que vence esta promoción"
+                        }
 
             n = len(selections)
             per_item = round(promo_price / n, 2)

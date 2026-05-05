@@ -100,7 +100,14 @@
                             ${{ "%.2f"|format(promotion.promo_price) }}
                         </div>
                     </div>
-                    {% if current_user %}
+                    {% if not promotion.is_currently_valid %}
+                    <span class="badge fs-6 px-4 py-3 bg-secondary">
+                        <i class="bi bi-clock-history me-2"></i>
+                        {% if promotion.vigencia_status == 'expirada' %}Promoción expirada
+                        {% elif promotion.vigencia_status == 'por_iniciar' %}Próximamente
+                        {% else %}No disponible{% endif %}
+                    </span>
+                    {% elif current_user %}
                     <button class="btn btn-danger btn-lg px-4" data-bs-toggle="modal" data-bs-target="#bookPromoModal">
                         <i class="bi bi-calendar-plus me-2"></i>Reservar Ahora
                     </button>
@@ -116,7 +123,7 @@
     </div>
 </div>
 
-{% if current_user %}
+{% if current_user and promotion.is_currently_valid %}
 <!-- ── MODAL DE RESERVA ── -->
 <div class="modal fade" id="bookPromoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -186,17 +193,18 @@
 
 <!-- Datos de la promoción para JS -->
 <script id="promo-services-data" type="application/json">{{ services_json | safe }}</script>
-<script id="promo-meta" type="application/json">{{ {"id": promotion.id, "name": promotion.name, "price": promotion.promo_price, "csrf": csrf_token()} | tojson }}</script>
+<script id="promo-meta" type="application/json">{{ {"id": promotion.id, "name": promotion.name, "price": promotion.promo_price, "csrf": csrf_token(), "end_date": promotion.end_datetime.strftime('%Y-%m-%d') if promotion.end_datetime else None} | tojson }}</script>
 
 {% block extra_js %}
 <script>
 (function () {
     const SERVICES    = JSON.parse(document.getElementById('promo-services-data').textContent);
     const _meta       = JSON.parse(document.getElementById('promo-meta').textContent);
-    const PROMO_ID    = _meta.id;
-    const PROMO_NAME  = _meta.name;
-    const PROMO_PRICE = _meta.price;
-    const CSRF_TOKEN  = _meta.csrf;
+    const PROMO_ID       = _meta.id;
+    const PROMO_NAME     = _meta.name;
+    const PROMO_PRICE    = _meta.price;
+    const CSRF_TOKEN     = _meta.csrf;
+    const PROMO_END_DATE = _meta.end_date || null;
 
     let currentStep = 0;
     const selections = SERVICES.map(() => ({
@@ -240,6 +248,7 @@
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             const minDate = tomorrow.toISOString().split('T')[0];
+            const maxDate = PROMO_END_DATE || '';
 
             panel.innerHTML = `
                 <div class="d-flex align-items-center gap-3 p-3 rounded-3 mb-4" style="background:#F4ECF1;">
@@ -249,6 +258,7 @@
                         <div class="text-muted small"><i class="bi bi-clock me-1"></i>${svc.duration_minutes} min</div>
                     </div>
                 </div>
+                ${PROMO_END_DATE ? `<div class="alert alert-warning py-2 small mb-3"><i class="bi bi-calendar-x me-1"></i>Esta promoción vence el <strong>${PROMO_END_DATE}</strong>. Solo puedes reservar hasta esa fecha.</div>` : ''}
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Especialista <span class="text-danger">*</span></label>
@@ -258,7 +268,7 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Fecha <span class="text-danger">*</span></label>
-                        <input type="date" id="date-${i}" class="form-control" min="${minDate}">
+                        <input type="date" id="date-${i}" class="form-control" min="${minDate}" ${maxDate ? `max="${maxDate}"` : ''}>
                     </div>
                 </div>
                 <div id="slots-area-${i}"></div>
