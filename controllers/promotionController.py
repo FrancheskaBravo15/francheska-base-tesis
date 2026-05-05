@@ -21,6 +21,9 @@ def detail(promo_id):
         flash(result["message"], 'danger')
         return redirect(url_for('promotions.list_promotions'))
     promo = result["promotion"]
+    # Bloquear reservas si la promoción no está vigente
+    if not promo.get("is_currently_valid"):
+        flash("Esta promoción ha expirado o aún no ha iniciado.", "warning")
     services_json = json.dumps([{
         "id":               s["id"],
         "name":             s["name"],

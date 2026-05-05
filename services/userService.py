@@ -6,6 +6,7 @@ from werkzeug.utils import secure_filename
 from repositories.userRepository import UserRepository
 from repositories.personRepository import PersonRepository
 from utils.userUtil import validate_registration_data, validate_login_data
+from services.emailService import EmailService
 import os
 
 ALLOWED_PHOTO_EXT = {"png", "jpg", "jpeg", "webp"}
@@ -51,6 +52,7 @@ class UserService:
             person = PersonModel(user_id,identification,first_name,last_name,phone)
             PersonRepository.create(person)
 
+            EmailService.send_welcome(email, first_name.strip())
             return {
                 "success": True,
                 "message": "Usuario creado exitosamente"

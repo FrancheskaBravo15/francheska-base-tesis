@@ -4,7 +4,20 @@ from repositories.appointmentRepository import AppointmentRepository
 from repositories.serviceRepository import ServiceRepository
 from repositories.workerRepository import WorkerRepository
 from repositories.personRepository import PersonRepository
+from repositories.userRepository import UserRepository
 from services.workerService import WorkerService
+from services.emailService import EmailService
+
+
+def _client_email_and_name(client_id: str):
+    """Retorna (email, first_name) del cliente o (None, '') si no se encuentra."""
+    try:
+        user   = UserRepository.find_by_id(client_id)
+        person = PersonRepository.find_by_user_id(client_id)
+        return (user.email if user else None,
+                person.first_name if person else "")
+    except Exception:
+        return None, ""
 
 class AppointmentService:
 
@@ -55,6 +68,22 @@ class AppointmentService:
                 "status": "cancelada",
                 "cancel_reason": reason.strip() if reason else ""
             })
+
+            email, first_name = _client_email_and_name(client_id)
+            if email:
+                service = ServiceRepository.find_by_id(appt.service_id)
+                worker  = WorkerRepository.find_by_id(appt.worker_id)
+                wp      = PersonRepository.find_by_user_id(worker.user_id) if worker else None
+                EmailService.send_appointment_cancelled(email, first_name, {
+                    "service_name":   service.name if service else "—",
+                    "worker_name":    f"{wp.first_name} {wp.last_name}" if wp else "—",
+                    "date":           appt.date,
+                    "start_time":     appt.start_time,
+                    "end_time":       appt.end_time,
+                    "total_price":    appt.total_price,
+                    "cancel_reason":  reason.strip() if reason else "",
+                    "promotion_name": appt.promotion_name,
+                })
             return {"success": True, "message": "Cita cancelada. No se realizan devoluciones."}
         except Exception as e:
             return {"success": False, "message": f"Error al cancelar cita: {e}"}
@@ -101,6 +130,21 @@ class AppointmentService:
                 AppointmentRepository.update_status_by_combo_instance(appt.combo_instance_id, "confirmada")
             else:
                 AppointmentRepository.update_status(appointment_id, "confirmada")
+
+            email, first_name = _client_email_and_name(appt.client_id)
+            if email:
+                service = ServiceRepository.find_by_id(appt.service_id)
+                worker  = WorkerRepository.find_by_id(appt.worker_id)
+                wp      = PersonRepository.find_by_user_id(worker.user_id) if worker else None
+                EmailService.send_appointment_confirmed(email, first_name, {
+                    "service_name":   service.name if service else "—",
+                    "worker_name":    f"{wp.first_name} {wp.last_name}" if wp else "—",
+                    "date":           appt.date,
+                    "start_time":     appt.start_time,
+                    "end_time":       appt.end_time,
+                    "total_price":    appt.total_price,
+                    "promotion_name": appt.promotion_name,
+                })
             return {"success": True, "message": "Pago validado. Cita(s) confirmada(s)."}
         except Exception as e:
             return {"success": False, "message": f"Error al validar pago: {e}"}
@@ -118,6 +162,22 @@ class AppointmentService:
                 AppointmentRepository.update_status_by_combo_instance(appt.combo_instance_id, "cancelada")
             else:
                 AppointmentRepository.update_status(appointment_id, "cancelada")
+
+            email, first_name = _client_email_and_name(appt.client_id)
+            if email:
+                service = ServiceRepository.find_by_id(appt.service_id)
+                worker  = WorkerRepository.find_by_id(appt.worker_id)
+                wp      = PersonRepository.find_by_user_id(worker.user_id) if worker else None
+                EmailService.send_appointment_cancelled(email, first_name, {
+                    "service_name":   service.name if service else "—",
+                    "worker_name":    f"{wp.first_name} {wp.last_name}" if wp else "—",
+                    "date":           appt.date,
+                    "start_time":     appt.start_time,
+                    "end_time":       appt.end_time,
+                    "total_price":    appt.total_price,
+                    "cancel_reason":  "Comprobante de pago rechazado por el administrador",
+                    "promotion_name": appt.promotion_name,
+                })
             return {"success": True, "message": "Comprobante rechazado. Cita(s) cancelada(s)."}
         except Exception as e:
             return {"success": False, "message": f"Error al rechazar pago: {e}"}
@@ -139,8 +199,8 @@ class AppointmentService:
             if not worker or worker.id != appt.worker_id:
                 return {"success": False, "message": "No tienes permiso para reagendar esta cita"}
 
-            if appt.status != "confirmada":
-                return {"success": False, "message": "Solo se pueden reagendar citas confirmadas"}
+            if appt.status not in ("confirmada", "en_curso"):
+                return {"success": False, "message": "Solo se pueden reagendar citas confirmadas o en curso"}
 
             if not proposed_date or not proposed_start_time:
                 return {"success": False, "message": "Debe indicar la nueva fecha y hora"}
@@ -165,6 +225,21 @@ class AppointmentService:
                 "proposed_end_time":   proposed_end_time,
                 "reschedule_reason":   reason.strip() if reason else ""
             })
+
+            email, first_name = _client_email_and_name(appt.client_id)
+            if email:
+                worker_person = PersonRepository.find_by_user_id(worker.user_id) if worker else None
+                EmailService.send_reschedule_proposal(email, first_name, {
+                    "service_name":        service.name if service else "—",
+                    "worker_name":         f"{worker_person.first_name} {worker_person.last_name}" if worker_person else "—",
+                    "date":                appt.date,
+                    "start_time":          appt.start_time,
+                    "end_time":            appt.end_time,
+                    "proposed_date":       proposed_date,
+                    "proposed_start_time": proposed_start_time,
+                    "proposed_end_time":   proposed_end_time,
+                    "reschedule_reason":   reason.strip() if reason else "",
+                })
             return {"success": True,
                     "message": "Propuesta de reagendamiento enviada. El cliente debe confirmarla."}
         except Exception as e:
@@ -200,6 +275,20 @@ class AppointmentService:
                 "proposed_end_time":  None,
                 "reschedule_reason":  None
             })
+
+            email, first_name = _client_email_and_name(client_id)
+            if email:
+                service = ServiceRepository.find_by_id(appt.service_id)
+                worker  = WorkerRepository.find_by_id(appt.worker_id)
+                wp      = PersonRepository.find_by_user_id(worker.user_id) if worker else None
+                EmailService.send_reschedule_accepted(email, first_name, {
+                    "service_name": service.name if service else "—",
+                    "worker_name":  f"{wp.first_name} {wp.last_name}" if wp else "—",
+                    "date":         appt.proposed_date,
+                    "start_time":   appt.proposed_start_time,
+                    "end_time":     appt.proposed_end_time,
+                    "total_price":  appt.total_price,
+                })
             return {"success": True,
                     "message": "Reagendamiento aceptado. Tu cita ha sido actualizada al nuevo horario."}
         except Exception as e:
@@ -223,6 +312,20 @@ class AppointmentService:
                 "proposed_end_time":  None,
                 "reschedule_reason":  None
             })
+
+            email, first_name = _client_email_and_name(client_id)
+            if email:
+                service = ServiceRepository.find_by_id(appt.service_id)
+                worker  = WorkerRepository.find_by_id(appt.worker_id)
+                wp      = PersonRepository.find_by_user_id(worker.user_id) if worker else None
+                EmailService.send_reschedule_rejected(email, first_name, {
+                    "service_name": service.name if service else "—",
+                    "worker_name":  f"{wp.first_name} {wp.last_name}" if wp else "—",
+                    "date":         appt.date,
+                    "start_time":   appt.start_time,
+                    "end_time":     appt.end_time,
+                    "total_price":  appt.total_price,
+                })
             return {"success": True,
                     "message": "Reagendamiento rechazado. Tu cita se mantiene en el horario original."}
         except Exception as e:
@@ -258,6 +361,22 @@ class AppointmentService:
                 AppointmentRepository.update_data(appointment_id, {
                     "status": "cancelada",
                     "cancel_reason": reason.strip()
+                })
+
+            email, first_name = _client_email_and_name(appt.client_id)
+            if email:
+                service = ServiceRepository.find_by_id(appt.service_id)
+                worker  = WorkerRepository.find_by_id(appt.worker_id)
+                wp      = PersonRepository.find_by_user_id(worker.user_id) if worker else None
+                EmailService.send_appointment_cancelled(email, first_name, {
+                    "service_name":   service.name if service else "—",
+                    "worker_name":    f"{wp.first_name} {wp.last_name}" if wp else "—",
+                    "date":           appt.date,
+                    "start_time":     appt.start_time,
+                    "end_time":       appt.end_time,
+                    "total_price":    appt.total_price,
+                    "cancel_reason":  reason.strip(),
+                    "promotion_name": appt.promotion_name,
                 })
             return {"success": True, "message": "Cita cancelada por el administrador."}
         except Exception as e:

@@ -1,5 +1,13 @@
-<nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm sticky-top">
+<nav class="navbar navbar-expand-lg navbar-light navbar-custom sticky-top">
     <div class="container">
+        {% if current_user and current_user.role == 'admin' %}
+        <button class="sb-admin-toggle me-4 {{ 'active' if request.path.startswith('/admin') }}"
+                type="button" data-bs-toggle="offcanvas" data-bs-target="#adminSidebar" aria-controls="adminSidebar"
+                title="Menú Admin">
+            <i class="bi bi-list"></i>
+        </button>
+        {% endif %}
+
         <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
             <img src="/img/logo.jpeg" alt="Logo" width="36" height="36" class="rounded-circle logo-img"> Shirley Buenaño
         </a>
@@ -37,70 +45,47 @@
             <!-- MENÚ DERECHA -->
             <ul class="navbar-nav ms-auto align-items-center gap-2">
 
-                {% if current_user %} {% if current_user.role == 'admin' %}
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle {{ 'active' if request.path.startswith('/admin') }}" href="#" data-bs-toggle="dropdown">
-                        <i class="bi bi-shield-lock me-1"></i>Admin
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ url_for('admin.panel') }}"><i class="bi bi-speedometer2 me-2"></i>Panel</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('admin.users') }}"><i class="bi bi-people me-2"></i>Usuarios</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('admin.categories') }}"><i class="bi bi-grid me-2"></i>Categorías</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('admin.services') }}"><i class="bi bi-scissors me-2"></i>Servicios</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('admin.workers') }}"><i class="bi bi-person-badge me-2"></i>Trabajadoras</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('admin.appointments') }}"><i class="bi bi-calendar-check me-2"></i>Citas</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('admin.promotions') }}"><i class="bi bi-tag me-2"></i>Promociones</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('admin.testimonials') }}"><i class="bi bi-chat-quote me-2"></i>Testimonios</a></li>
-                    </ul>
-                </li>
+                {% if current_user %}
 
-                {% elif current_user.role == 'worker' %}
+                {% if current_user.role == 'worker' %}
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('worker.dashboard') }}"><i class="bi bi-speedometer2 me-1"></i>Mi Panel</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('worker.appointments') }}"><i class="bi bi-calendar-check me-1"></i>Mis Citas</a></li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('worker.schedule') }}"><i class="bi bi-clock me-1"></i>Horario</a></li>
 
-                {% else %}
+                {% elif current_user.role != 'admin' %}
                 <li class="nav-item">
                     <a class="nav-link position-relative" href="{{ url_for('wishlist.view') }}">
                         <i class="bi bi-heart me-1"></i>Favoritos
                         {% if wishlist_count and wishlist_count > 0 %}
-                        <span class="badge bg-white text-dark position-absolute top-0 start-100 translate-middle">
-                            {{ wishlist_count }}
-                        </span>
+                        <span class="badge bg-white text-dark position-absolute top-0 start-100 translate-middle">{{ wishlist_count }}</span>
                         {% endif %}
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link position-relative" href="{{ url_for('cart.view_cart') }}">
-                            <i class="bi bi-cart me-1"></i>Carrito
-                            {% if cart_count and cart_count > 0 %}
-                            <span class="badge bg-white text-dark position-absolute top-0 start-100 translate-middle">
-                                {{ cart_count }}
-                            </span>
-                            {% endif %}
-                        </a>
+                        <i class="bi bi-cart me-1"></i>Carrito
+                        {% if cart_count and cart_count > 0 %}
+                        <span class="badge bg-white text-dark position-absolute top-0 start-100 translate-middle">{{ cart_count }}</span>
+                        {% endif %}
+                    </a>
                 </li>
                 <li class="nav-item"><a class="nav-link" href="{{ url_for('appointments.my_appointments') }}"><i class="bi bi-calendar-check me-1"></i>Mis Citas</a></li>
                 {% endif %}
 
-                <!-- PERFIL -->
+                <!-- PERFIL — solo para no-admin -->
+                {% if current_user.role != 'admin' %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" data-bs-toggle="dropdown">
-                            {% if current_user.profile_photo %}
-                                <img src="{{ current_user.profile_photo }}" class="profile-img">
-                            {% else %}
-                                <span class="profile-icon">
-                                    <i class="bi bi-person-fill"></i>
-                                </span>
-                            {% endif %}
-                            {{ current_user.first_name }}
-                        </a>
-
+                        {% if current_user.profile_photo %}
+                            <img src="{{ current_user.profile_photo }}" class="profile-img">
+                        {% else %}
+                            <span class="profile-icon"><i class="bi bi-person-fill"></i></span>
+                        {% endif %}
+                        {{ current_user.first_name }}
+                    </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><span class="dropdown-item-text small text-muted">{{ current_user.email }}</span></li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
+                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{{ url_for('users.profile') }}"><i class="bi bi-person me-2"></i>Mi Perfil</a></li>
                         <li>
                             <form action="{{ url_for('users.logout') }}" method="POST">
@@ -110,6 +95,7 @@
                         </li>
                     </ul>
                 </li>
+                {% endif %}
 
                 {% else %}
 
@@ -118,8 +104,8 @@
                 </li>
                 <li class="nav-item">
                     <a class="btn btn-register ms-2" href="{{ url_for('users.register') }}">
-                            <i class="bi bi-person-plus me-1"></i>Registrarse
-                        </a>
+                        <i class="bi bi-person-plus me-1"></i>Registrarse
+                    </a>
                 </li>
 
                 {% endif %}
@@ -128,3 +114,88 @@
         </div>
     </div>
 </nav>
+
+{% if current_user and current_user.role == 'admin' %}
+<!-- ── ADMIN SIDEBAR (Offcanvas) ── -->
+<div class="offcanvas offcanvas-start sb-admin-sidebar" tabindex="-1" id="adminSidebar" aria-labelledby="adminSidebarLabel">
+
+    <div class="offcanvas-header sb-sidebar-header">
+        <div class="d-flex align-items-center gap-2">
+            <div class="sb-sidebar-logo">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <div>
+                <h6 class="offcanvas-title mb-0" id="adminSidebarLabel">Administración</h6>
+                <small class="text-muted">{{ current_user.email }}</small>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+    </div>
+
+    <div class="offcanvas-body p-0 d-flex flex-column">
+        <nav class="sb-sidebar-nav flex-grow-1">
+            <div class="sb-sidebar-section-label">Gestión</div>
+            <a href="{{ url_for('admin.panel') }}"
+               class="sb-sidebar-link {{ 'active' if request.path == '/admin/panel' }}">
+                <i class="bi bi-speedometer2"></i>Panel General
+            </a>
+            <a href="{{ url_for('admin.users') }}"
+               class="sb-sidebar-link {{ 'active' if request.path.startswith('/admin/users') }}">
+                <i class="bi bi-people"></i>Usuarios
+            </a>
+            <a href="{{ url_for('admin.workers') }}"
+               class="sb-sidebar-link {{ 'active' if request.path.startswith('/admin/workers') }}">
+                <i class="bi bi-person-badge"></i>Trabajadoras
+            </a>
+            <a href="{{ url_for('admin.appointments') }}"
+               class="sb-sidebar-link {{ 'active' if request.path.startswith('/admin/appointments') }}">
+                <i class="bi bi-calendar-check"></i>Citas
+            </a>
+
+            <div class="sb-sidebar-section-label mt-2">Catálogo</div>
+            <a href="{{ url_for('admin.categories') }}"
+               class="sb-sidebar-link {{ 'active' if request.path.startswith('/admin/categories') }}">
+                <i class="bi bi-grid"></i>Categorías
+            </a>
+            <a href="{{ url_for('admin.services') }}"
+               class="sb-sidebar-link {{ 'active' if request.path.startswith('/admin/services') }}">
+                <i class="bi bi-scissors"></i>Servicios
+            </a>
+            <a href="{{ url_for('admin.promotions') }}"
+               class="sb-sidebar-link {{ 'active' if request.path.startswith('/admin/promotions') }}">
+                <i class="bi bi-tag"></i>Promociones
+            </a>
+            <a href="{{ url_for('admin.testimonials') }}"
+               class="sb-sidebar-link {{ 'active' if request.path.startswith('/admin/testimonials') }}">
+                <i class="bi bi-chat-quote"></i>Testimonios
+            </a>
+        </nav>
+
+        <!-- PERFIL ADMIN — pie del sidebar -->
+        <div class="sb-sidebar-footer">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                {% if current_user.profile_photo %}
+                    <img src="{{ current_user.profile_photo }}" class="profile-img" style="width:36px;height:36px;">
+                {% else %}
+                    <span class="profile-icon" style="width:36px;height:36px;font-size:.95rem;">
+                        <i class="bi bi-person-fill"></i>
+                    </span>
+                {% endif %}
+                <div>
+                    <div class="fw-semibold" style="font-size:.875rem;color:var(--sb-dark);">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+                    <div style="font-size:.75rem;color:var(--sb-muted);">{{ current_user.email }}</div>
+                </div>
+            </div>
+            <a href="{{ url_for('users.profile') }}" class="sb-sidebar-link mb-1">
+                <i class="bi bi-person"></i>Mi Perfil
+            </a>
+            <form action="{{ url_for('users.logout') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="sb-sidebar-link w-100 border-0 bg-transparent text-start" style="color:#C0392B;">
+                    <i class="bi bi-box-arrow-right" style="color:#C0392B;"></i>Cerrar sesión
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}

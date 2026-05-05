@@ -55,14 +55,33 @@ class AppointmentRepository:
     def find_by_worker_and_date(cls, worker_id: str, date: str) -> List[AppointmentModel]:
         try:
             collection = cls._get_collection()
+            normalized = date.replace("/", "-")
+            slash_fmt  = normalized.replace("-", "/")
             return [AppointmentModel.from_dict(a) for a in
                     collection.find({
                         "worker_id": worker_id,
-                        "date": date,
+                        "date": {"$in": [normalized, slash_fmt]},
                         "status": {"$nin": ["cancelada"]}
                     }).sort("start_time", 1)]
         except PyMongoError as e:
             print(f"Error al buscar citas por trabajadora y fecha en la BD: {e}")
+            raise
+
+    @classmethod
+    def find_proposed_by_worker_and_date(cls, worker_id: str, date: str) -> List[AppointmentModel]:
+        """Citas en pendiente_reagenda cuya fecha PROPUESTA coincide con la fecha dada."""
+        try:
+            collection = cls._get_collection()
+            normalized = date.replace("/", "-")
+            slash_fmt  = normalized.replace("-", "/")
+            return [AppointmentModel.from_dict(a) for a in
+                    collection.find({
+                        "worker_id": worker_id,
+                        "proposed_date": {"$in": [normalized, slash_fmt]},
+                        "status": "pendiente_reagenda"
+                    }).sort("proposed_start_time", 1)]
+        except PyMongoError as e:
+            print(f"Error al buscar reagendamientos propuestos por trabajadora y fecha en la BD: {e}")
             raise
 
     @classmethod
@@ -184,18 +203,38 @@ class AppointmentRepository:
                      exclude_id: str = None) -> bool:
         try:
             collection = cls._get_collection()
-            query = {
+            normalized = date.replace("/", "-")
+            slash_fmt  = normalized.replace("-", "/")
+            id_filter  = {"$ne": ObjectId(exclude_id)} if exclude_id else None
+
+            # 1. Citas confirmadas/pendientes con horario real en la fecha dada
+            query1 = {
                 "worker_id": worker_id,
-                "date": date,
+                "date": {"$in": [normalized, slash_fmt]},
                 "status": {"$nin": ["cancelada"]},
                 "$and": [
                     {"start_time": {"$lt": end_time}},
                     {"end_time":   {"$gt": start_time}}
                 ]
             }
-            if exclude_id:
-                query["_id"] = {"$ne": ObjectId(exclude_id)}
-            return collection.find_one(query) is not None
+            if id_filter:
+                query1["_id"] = id_filter
+            if collection.find_one(query1) is not None:
+                return True
+
+            # 2. Reagendamientos pendientes cuyo horario PROPUESTO cae en la fecha dada
+            query2 = {
+                "worker_id": worker_id,
+                "proposed_date": {"$in": [normalized, slash_fmt]},
+                "status": "pendiente_reagenda",
+                "$and": [
+                    {"proposed_start_time": {"$lt": end_time}},
+                    {"proposed_end_time":   {"$gt": start_time}}
+                ]
+            }
+            if id_filter:
+                query2["_id"] = id_filter
+            return collection.find_one(query2) is not None
         except PyMongoError as e:
             print(f"Error al verificar conflicto de cita en la BD: {e}")
             raise

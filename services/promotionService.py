@@ -1,4 +1,5 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
+from datetime import datetime
 from models.promotionModel import PromotionModel
 from repositories.promotionRepository import PromotionRepository
 from repositories.serviceRepository import ServiceRepository
@@ -12,11 +13,31 @@ def _allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def _parse_datetime(value: str) -> Optional[datetime]:
+    """Convierte 'YYYY-MM-DDTHH:MM' (input datetime-local) a datetime. Retorna None si vacío."""
+    if not value or not value.strip():
+        return None
+    try:
+        return datetime.strptime(value.strip(), "%Y-%m-%dT%H:%M")
+    except ValueError:
+        return None
+
+
+def _promo_to_dict(p: PromotionModel, services: list) -> dict:
+    d = p.__dict__.copy()
+    d["services"]       = [s.__dict__ for s in services]
+    d["original_price"] = sum(s.price for s in services)
+    d["vigencia_status"]    = p.vigencia_status
+    d["is_currently_valid"] = p.is_currently_valid
+    return d
+
+
 class PromotionService:
 
     @staticmethod
     def create_promotion(name: str, description: str, service_ids: List[str],
-                         promo_price: str, image_file=None, upload_folder: str = None) -> Dict:
+                         promo_price: str, image_file=None, upload_folder: str = None,
+                         start_datetime: str = None, end_datetime: str = None) -> Dict:
         if not name or len(name.strip()) < 2:
             return {"success": False, "message": "El nombre debe tener al menos 2 caracteres"}
         if not service_ids or len(service_ids) < 2:
@@ -27,6 +48,11 @@ class PromotionService:
                 return {"success": False, "message": "El precio promocional debe ser mayor a 0"}
         except (TypeError, ValueError):
             return {"success": False, "message": "El precio debe ser un número válido"}
+
+        start_dt = _parse_datetime(start_datetime)
+        end_dt   = _parse_datetime(end_datetime)
+        if start_dt and end_dt and start_dt >= end_dt:
+            return {"success": False, "message": "La fecha de inicio debe ser anterior a la fecha de fin"}
 
         image_url = None
         if image_file and image_file.filename:
@@ -41,11 +67,13 @@ class PromotionService:
 
         try:
             promo = PromotionModel(
-                name=name.strip(),
-                description=description.strip() if description else "",
-                service_ids=service_ids,
-                promo_price=price,
-                image_url=image_url
+                name           = name.strip(),
+                description    = description.strip() if description else "",
+                service_ids    = service_ids,
+                promo_price    = price,
+                image_url      = image_url,
+                start_datetime = start_dt,
+                end_datetime   = end_dt,
             )
             promo_id = PromotionRepository.create(promo)
             return {"success": True, "message": "Promoción creada exitosamente", "promo_id": promo_id}
@@ -55,19 +83,27 @@ class PromotionService:
     @staticmethod
     def update_promotion(promo_id: str, name: str, description: str, service_ids: List[str],
                          promo_price: str, is_active: bool,
-                         image_file=None, upload_folder: str = None) -> Dict:
+                         image_file=None, upload_folder: str = None,
+                         start_datetime: str = None, end_datetime: str = None) -> Dict:
         try:
             if not PromotionRepository.find_by_id(promo_id):
                 return {"success": False, "message": "Promoción no encontrada"}
             if not service_ids or len(service_ids) < 2:
                 return {"success": False, "message": "Un combo debe incluir al menos 2 servicios"}
 
+            start_dt = _parse_datetime(start_datetime)
+            end_dt   = _parse_datetime(end_datetime)
+            if start_dt and end_dt and start_dt >= end_dt:
+                return {"success": False, "message": "La fecha de inicio debe ser anterior a la fecha de fin"}
+
             data = {
-                "name": name.strip(),
-                "description": description.strip() if description else "",
-                "service_ids": service_ids,
-                "promo_price": float(promo_price),
-                "is_active": is_active
+                "name":           name.strip(),
+                "description":    description.strip() if description else "",
+                "service_ids":    service_ids,
+                "promo_price":    float(promo_price),
+                "is_active":      is_active,
+                "start_datetime": start_dt,
+                "end_datetime":   end_dt,
             }
             if image_file and image_file.filename:
                 if not _allowed_file(image_file.filename):
@@ -96,13 +132,13 @@ class PromotionService:
     def get_all_promotions(only_active=False) -> Dict:
         try:
             promos = PromotionRepository.find_all(only_active=only_active)
+            # Filtro adicional por vigencia cuando se pide solo las activas (vista cliente)
+            if only_active:
+                promos = [p for p in promos if p.is_currently_valid]
             result = []
             for p in promos:
-                promo_dict = p.__dict__.copy()
                 services = ServiceRepository.find_by_ids(p.service_ids) if p.service_ids else []
-                promo_dict["services"] = [s.__dict__ for s in services]
-                promo_dict["original_price"] = sum(s.price for s in services)
-                result.append(promo_dict)
+                result.append(_promo_to_dict(p, services))
             return {"success": True, "promotions": result}
         except Exception as e:
             return {"success": False, "message": f"Error al obtener promociones: {e}", "promotions": []}
@@ -113,10 +149,7 @@ class PromotionService:
             promo = PromotionRepository.find_by_id(promo_id)
             if not promo:
                 return {"success": False, "message": "Promoción no encontrada"}
-            promo_dict = promo.__dict__.copy()
             services = ServiceRepository.find_by_ids(promo.service_ids) if promo.service_ids else []
-            promo_dict["services"] = [s.__dict__ for s in services]
-            promo_dict["original_price"] = sum(s.price for s in services)
-            return {"success": True, "promotion": promo_dict}
+            return {"success": True, "promotion": _promo_to_dict(promo, services)}
         except Exception as e:
             return {"success": False, "message": f"Error al obtener promoción: {e}"}

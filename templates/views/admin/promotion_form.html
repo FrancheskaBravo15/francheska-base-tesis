@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% block title %}{% if promotion %}Editar{% else %}Nueva{% endif %} Promoción - Admin{% endblock %}
 
 {% block body %}
@@ -93,6 +93,25 @@
                         </div>
                     </div>
 
+                    <!-- Vigencia -->
+                    <div class="card border-0 bg-light rounded-3 p-3 mb-3">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-calendar-range me-2 text-danger"></i>Período de Vigencia <span class="text-muted fw-normal small">(opcional)</span></h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small">Inicio de la promoción</label>
+                                <input type="datetime-local" class="form-control" name="start_datetime"
+                                       value="{% if promotion and promotion.start_datetime %}{{ promotion.start_datetime.strftime('%Y-%m-%dT%H:%M') }}{% elif form_data %}{{ form_data.get('start_datetime', '') }}{% endif %}">
+                                <div class="form-text">Si se deja en blanco, la promoción estará disponible de inmediato.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small">Fin de la promoción</label>
+                                <input type="datetime-local" class="form-control" name="end_datetime"
+                                       value="{% if promotion and promotion.end_datetime %}{{ promotion.end_datetime.strftime('%Y-%m-%dT%H:%M') }}{% elif form_data %}{{ form_data.get('end_datetime', '') }}{% endif %}">
+                                <div class="form-text">Si se deja en blanco, la promoción no expira automáticamente.</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Imagen del Combo</label>
                         {% if promotion and promotion.image_url %}
@@ -171,7 +190,7 @@
             if (!svc) return;
             const badge = document.createElement('span');
             badge.className = 'badge d-inline-flex align-items-center gap-1 px-2 py-1';
-            badge.style.cssText = 'background-color:#c2185b;font-size:.85rem;';
+            badge.style.cssText = 'background-color:#7C4A6B;font-size:.85rem;';
             badge.innerHTML = `${svc.name} <button type="button" class="btn-close btn-close-white ms-1" style="font-size:.5rem;" aria-label="Quitar"></button>`;
             badge.querySelector('button').addEventListener('click', () => {
                 selected.delete(id);
@@ -221,7 +240,7 @@
                 renderBadges();
                 renderList(searchInput.value);
             });
-            row.addEventListener('mouseenter', () => row.style.background = '#fce4ec');
+            row.addEventListener('mouseenter', () => row.style.background = '#F4ECF1');
             row.addEventListener('mouseleave', () => row.style.background = '');
             listWrap.appendChild(row);
         });
