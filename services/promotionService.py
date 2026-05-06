@@ -49,6 +49,16 @@ class PromotionService:
         except (TypeError, ValueError):
             return {"success": False, "message": "El precio debe ser un número válido"}
 
+        # Validar descuento mínimo del 5%
+        services = ServiceRepository.find_by_ids(service_ids)
+        original_total = sum(s.price for s in services)
+        max_allowed = round(original_total * 0.95, 2)
+        if price > max_allowed:
+            return {
+                "success": False,
+                "message": f"El precio promocional (${price:.2f}) debe tener al menos 5% de descuento. Máximo permitido: ${max_allowed:.2f}"
+            }
+
         start_dt = _parse_datetime(start_datetime)
         end_dt   = _parse_datetime(end_datetime)
         if start_dt and end_dt and start_dt >= end_dt:
@@ -91,6 +101,16 @@ class PromotionService:
             if not service_ids or len(service_ids) < 2:
                 return {"success": False, "message": "Un combo debe incluir al menos 2 servicios"}
 
+            price = float(promo_price)
+            services = ServiceRepository.find_by_ids(service_ids)
+            original_total = sum(s.price for s in services)
+            max_allowed = round(original_total * 0.95, 2)
+            if price > max_allowed:
+                return {
+                    "success": False,
+                    "message": f"El precio promocional (${price:.2f}) debe tener al menos 5% de descuento. Máximo permitido: ${max_allowed:.2f}"
+                }
+
             start_dt = _parse_datetime(start_datetime)
             end_dt   = _parse_datetime(end_datetime)
             if start_dt and end_dt and start_dt >= end_dt:
@@ -100,7 +120,7 @@ class PromotionService:
                 "name":           name.strip(),
                 "description":    description.strip() if description else "",
                 "service_ids":    service_ids,
-                "promo_price":    float(promo_price),
+                "promo_price":    price,
                 "is_active":      is_active,
                 "start_datetime": start_dt,
                 "end_datetime":   end_dt,

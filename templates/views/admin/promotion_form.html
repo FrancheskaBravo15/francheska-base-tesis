@@ -82,10 +82,28 @@
                         {% endif %}
                     </div>
 
+                    <!-- Resumen de precios -->
+                    <div id="price-summary" class="card border-0 rounded-3 mb-3" style="display:none;background:#faf6f8;border-left:4px solid #8B3A5E!important;border-left-style:solid!important;">
+                        <div class="card-body p-3">
+                            <h6 class="fw-bold mb-3" style="color:#5A1F3A;">
+                                <i class="bi bi-calculator me-2"></i>Resumen de Precios
+                            </h6>
+                            <div id="price-rows" class="mb-2"></div>
+                            <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                                <span class="fw-semibold small text-muted">PRECIO ORIGINAL (sin promo)</span>
+                                <span id="original-total" class="fw-bold fs-5" style="color:#8B3A5E;">$0.00</span>
+                            </div>
+                            <div id="savings-row" class="d-flex justify-content-between align-items-center pt-1" style="display:none!important;">
+                                <span class="small text-success fw-semibold">Ahorro del cliente</span>
+                                <span id="savings-amount" class="small text-success fw-semibold"></span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Precio Promocional ($) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" name="promo_price" required
+                            <input type="number" class="form-control" name="promo_price" id="promo_price" required
                                    min="0.01" step="0.01"
                                    value="{{ promotion.promo_price if promotion else (form_data.promo_price if form_data else '') }}"
                                    placeholder="0.00">
@@ -156,11 +174,17 @@
     if (!raw) return;
     const ALL = JSON.parse(raw.textContent);
 
-    const inputsWrap  = document.getElementById('selected-inputs');
-    const badgesWrap  = document.getElementById('selected-badges');
-    const noSelMsg    = document.getElementById('no-selection-msg');
-    const listWrap    = document.getElementById('svc-list');
-    const searchInput = document.getElementById('svc-search');
+    const inputsWrap   = document.getElementById('selected-inputs');
+    const badgesWrap   = document.getElementById('selected-badges');
+    const noSelMsg     = document.getElementById('no-selection-msg');
+    const listWrap     = document.getElementById('svc-list');
+    const searchInput  = document.getElementById('svc-search');
+    const priceSummary = document.getElementById('price-summary');
+    const priceRows    = document.getElementById('price-rows');
+    const originalTotal = document.getElementById('original-total');
+    const savingsRow   = document.getElementById('savings-row');
+    const savingsAmt   = document.getElementById('savings-amount');
+    const promoPriceInput = document.getElementById('promo_price');
 
     const selected = new Set(
         Array.from(inputsWrap.querySelectorAll('input[type=hidden]')).map(i => i.value)
@@ -177,11 +201,80 @@
         });
     }
 
+    let currentTotal = 0;
+
+    function renderPriceSummary() {
+        if (selected.size === 0) {
+            priceSummary.style.display = 'none';
+            promoPriceInput.removeAttribute('max');
+            clearPromoError();
+            return;
+        }
+        priceSummary.style.display = '';
+        priceRows.innerHTML = '';
+        currentTotal = 0;
+        selected.forEach(id => {
+            const svc = ALL.find(s => s.id === id);
+            if (!svc) return;
+            currentTotal += svc.price;
+            const row = document.createElement('div');
+            row.className = 'd-flex justify-content-between align-items-center py-1';
+            row.innerHTML = `
+                <span class="small text-muted">
+                    <i class="bi bi-scissors me-1 text-danger" style="font-size:.7rem;"></i>${svc.name}
+                    <span class="badge bg-danger-subtle text-danger ms-1" style="font-size:.65rem;">${svc.category}</span>
+                </span>
+                <span class="small fw-semibold">$${svc.price.toFixed(2)}</span>`;
+            priceRows.appendChild(row);
+        });
+        originalTotal.textContent = `$${currentTotal.toFixed(2)}`;
+
+        // Actualizar max del input (descuento mínimo 5%)
+        const maxAllowed = (currentTotal * 0.95).toFixed(2);
+        promoPriceInput.max = maxAllowed;
+        validatePromoPrice();
+    }
+
+    function validatePromoPrice() {
+        const promo = parseFloat(promoPriceInput.value);
+        const maxAllowed = currentTotal * 0.95;
+        let errorEl = document.getElementById('promo-price-error');
+
+        if (currentTotal > 0 && promo > maxAllowed) {
+            promoPriceInput.classList.add('is-invalid');
+            if (!errorEl) {
+                errorEl = document.createElement('div');
+                errorEl.id        = 'promo-price-error';
+                errorEl.className = 'invalid-feedback';
+                promoPriceInput.parentNode.appendChild(errorEl);
+            }
+            errorEl.textContent = `El precio promocional máximo es $${maxAllowed.toFixed(2)} (descuento mínimo del 5% sobre $${currentTotal.toFixed(2)}).`;
+            savingsRow.style.display = 'none';
+        } else {
+            clearPromoError();
+            if (promo > 0 && promo < currentTotal) {
+                const saving = currentTotal - promo;
+                const pct    = ((saving / currentTotal) * 100).toFixed(0);
+                savingsAmt.textContent = `-$${saving.toFixed(2)} (${pct}% OFF)`;
+                savingsRow.style.display = '';
+            } else {
+                savingsRow.style.display = 'none';
+            }
+        }
+    }
+
+    function clearPromoError() {
+        promoPriceInput.classList.remove('is-invalid');
+        const errorEl = document.getElementById('promo-price-error');
+        if (errorEl) errorEl.remove();
+    }
+
     function renderBadges() {
         badgesWrap.innerHTML = '';
         if (selected.size === 0) {
             noSelMsg.style.display = '';
             badgesWrap.appendChild(noSelMsg);
+            renderPriceSummary();
             return;
         }
         noSelMsg.style.display = 'none';
@@ -200,6 +293,7 @@
             });
             badgesWrap.appendChild(badge);
         });
+        renderPriceSummary();
     }
 
     function renderList(query) {
@@ -247,6 +341,16 @@
     }
 
     searchInput.addEventListener('input', e => renderList(e.target.value));
+    promoPriceInput.addEventListener('input', validatePromoPrice);
+
+    document.querySelector('form').addEventListener('submit', function (e) {
+        const promo = parseFloat(promoPriceInput.value);
+        if (currentTotal > 0 && promo > currentTotal * 0.95) {
+            e.preventDefault();
+            validatePromoPrice();
+            promoPriceInput.focus();
+        }
+    });
 
     syncInputs();
     renderBadges();
