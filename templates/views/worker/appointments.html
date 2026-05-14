@@ -24,6 +24,7 @@
     <button class="btn btn-sm btn-outline-warning filter-btn" data-filter="pendiente_reagenda">Reagendando</button>
     <button class="btn btn-sm btn-outline-secondary filter-btn" data-filter="completada">Completadas</button>
     <button class="btn btn-sm filter-btn" style="border:1px solid #f48fb1; color:#f48fb1;" data-filter="cancelada">Canceladas</button>
+    <button class="btn btn-sm filter-btn" style="border:1px solid #9E9E9E; color:#9E9E9E;" data-filter="no_asistio">No asistió</button>
 </div>
 
 {% if appointments %}
@@ -77,12 +78,13 @@
                                 <span class="badge bg-secondary">Completada</span>
                             {% elif appt.status == 'cancelada' %}
                                 <span class="badge" style="background-color:#f48fb1; color:white;">Cancelada</span>
+                            {% elif appt.status == 'no_asistio' %}
+                                <span class="badge bg-dark"><i class="bi bi-person-x me-1"></i>No asistió</span>
                             {% endif %}
                         </td>
                         <td class="text-center pe-3">
                             {% if appt.status == 'confirmada' %}
                                 <div class="d-flex gap-1 justify-content-center">
-                                    <!-- Completar -->
                                     <form method="POST"
                                           action="{{ url_for('worker.complete_appointment', appointment_id=appt.appointment_id) }}"
                                           onsubmit="return confirm('¿Marcar como completada?')">
@@ -91,7 +93,6 @@
                                             <i class="bi bi-check-circle"></i>
                                         </button>
                                     </form>
-                                    <!-- Reagendar -->
                                     <button class="btn btn-sm btn-outline-warning"
                                             title="Proponer nuevo horario"
                                             data-bs-toggle="modal"
@@ -103,6 +104,14 @@
                                             data-service="{{ appt.service_name }}">
                                         <i class="bi bi-calendar2-plus"></i>
                                     </button>
+                                    <form method="POST"
+                                          action="{{ url_for('worker.no_show', appointment_id=appt.appointment_id) }}"
+                                          onsubmit="return confirm('¿Registrar que la clienta no se presentó?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button class="btn btn-sm btn-outline-secondary" title="No se presentó">
+                                            <i class="bi bi-person-x"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             {% elif appt.status == 'en_curso' %}
                                 <div class="d-flex gap-1 justify-content-center">
@@ -125,6 +134,14 @@
                                             data-service="{{ appt.service_name }}">
                                         <i class="bi bi-calendar2-plus"></i>
                                     </button>
+                                    <form method="POST"
+                                          action="{{ url_for('worker.no_show', appointment_id=appt.appointment_id) }}"
+                                          onsubmit="return confirm('¿Registrar que la clienta no se presentó?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button class="btn btn-sm btn-outline-secondary" title="No se presentó">
+                                            <i class="bi bi-person-x"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             {% elif appt.status == 'pendiente_validacion' %}
                                 <span class="text-muted small"><i class="bi bi-lock me-1"></i>Pendiente de validación por admin</span>

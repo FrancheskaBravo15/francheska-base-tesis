@@ -188,6 +188,81 @@ Tu cita continúa en el horario original:</p>
     return _base_template(content)
 
 
+def _html_password_reset(first_name: str, reset_url: str) -> str:
+    content = f"""
+<h2>Recupera tu contraseña 🔐</h2>
+<p>Hola <strong>{first_name}</strong>, recibimos una solicitud para restablecer la contraseña
+de tu cuenta en <strong>Shirley Buenaño</strong>.</p>
+<p>Haz clic en el botón para crear una nueva contraseña. Este enlace es válido por
+<strong>1 hora</strong>.</p>
+<div style="text-align:center;margin:28px 0;">
+  <a href="{reset_url}" class="btn"
+     style="background:{_PRIMARY};color:#fff;padding:14px 32px;border-radius:8px;
+            text-decoration:none;font-weight:700;font-size:15px;">
+    Restablecer Contraseña
+  </a>
+</div>
+<p style="font-size:13px;color:#888;">Si no puedes hacer clic en el botón, copia y pega
+este enlace en tu navegador:<br>
+<a href="{reset_url}" style="color:{_PRIMARY};word-break:break-all;">{reset_url}</a></p>
+<hr style="border:none;border-top:1px solid #ede0e8;margin:20px 0;">
+<p style="font-size:12px;color:#aaa;">Si no solicitaste este cambio, ignora este correo.
+Tu contraseña no será modificada.</p>
+"""
+    return _base_template(content)
+
+
+def _html_overdue_voucher_notice(first_name: str, appt: dict) -> str:
+    contact = os.getenv("SALON_PHONE", "")
+    contact_line = (f'<p style="margin:8px 0;font-size:14px;">📱 <strong>{contact}</strong></p>'
+                    if contact else "")
+    content = f"""
+<h2>Hola, {first_name} 👋</h2>
+<p>Notamos que tu cita con comprobante de pago <strong>no fue procesada a tiempo</strong>
+por parte de nuestro equipo. Nos disculpamos por este inconveniente.</p>
+<p><strong>Tu dinero está a salvo.</strong> Tienes dos opciones y tú decides:</p>
+
+<div class="info-box" style="border-left-color:#FFC107;">
+  {_appt_rows(appt)}
+</div>
+
+<table style="width:100%;border-collapse:separate;border-spacing:0 10px;margin:20px 0;">
+  <tr>
+    <td style="background:#e8f5e9;border-radius:8px;padding:16px 20px;width:48%;vertical-align:top;">
+      <p style="margin:0 0 6px;font-weight:700;color:#2e7d32;font-size:15px;">
+        📅 Opción A — Cambiar la fecha
+      </p>
+      <p style="margin:0;font-size:13px;color:#555;">
+        Comunícate con nosotros y agendamos tu cita en un nuevo día sin costo adicional.
+        Tu pago ya está registrado.
+      </p>
+    </td>
+    <td style="width:4%;"></td>
+    <td style="background:#fff3e0;border-radius:8px;padding:16px 20px;width:48%;vertical-align:top;">
+      <p style="margin:0 0 6px;font-weight:700;color:#e65100;font-size:15px;">
+        💰 Opción B — Devolución del dinero
+      </p>
+      <p style="margin:0;font-size:13px;color:#555;">
+        Si prefieres que te devolvamos el pago, comunícate con nosotros y
+        lo procesamos a la brevedad.
+      </p>
+    </td>
+  </tr>
+</table>
+
+<p>Para elegir tu opción, contáctanos por cualquiera de estos medios:</p>
+{contact_line}
+<p style="margin:4px 0;font-size:14px;">
+  📧 Responde directamente a este correo
+</p>
+
+<hr class="divider">
+<p style="font-size:13px;color:#888;">
+  Lamentamos los inconvenientes. Nuestro compromiso es garantizar tu satisfacción.
+</p>"""
+    return _base_template(content)
+
+
 # ── Servicio público ───────────────────────────────────────────────────────────
 
 class EmailService:
@@ -242,3 +317,15 @@ class EmailService:
     @classmethod
     def send_reschedule_rejected(cls, to_email: str, first_name: str, appt: dict) -> None:
         cls._send_async(to_email, "Tu cita se mantiene en el horario original", _html_reschedule_rejected(first_name, appt))
+
+    @classmethod
+    def send_password_reset(cls, to_email: str, first_name: str, reset_url: str) -> None:
+        cls._send_async(to_email, "Recupera tu contraseña - Shirley Buenaño 🔐", _html_password_reset(first_name, reset_url))
+
+    @classmethod
+    def send_overdue_voucher_notice(cls, to_email: str, first_name: str, appt: dict) -> None:
+        cls._send_async(
+            to_email,
+            "Tu cita pendiente necesita tu atención — Shirley Buenaño 📋",
+            _html_overdue_voucher_notice(first_name, appt)
+        )

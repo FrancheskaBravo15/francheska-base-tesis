@@ -37,7 +37,14 @@
                 <div class="d-flex justify-content-between align-items-start py-2
                             {% if not loop.last %}border-bottom{% endif %}">
                     <div>
-                        <div class="fw-semibold small">{{ item.service_name }}</div>
+                        <div class="fw-semibold small">
+                            {{ item.service_name }}
+                            {% if item.date == today_str %}
+                                <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Hoy — paga pronto
+                                </span>
+                            {% endif %}
+                        </div>
                         <div class="text-muted small">
                             <i class="bi bi-person-badge me-1"></i>{{ item.worker_name }}<br>
                             <i class="bi bi-calendar me-1"></i>{{ item.date }}
@@ -61,7 +68,14 @@
             <div class="card-body">
                 <div class="row align-items-center g-3">
                     <div class="col-md-7">
-                        <h6 class="fw-bold mb-1">{{ item.service_name }}</h6>
+                        <h6 class="fw-bold mb-1">
+                            {{ item.service_name }}
+                            {% if item.date == today_str %}
+                                <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Hoy — paga pronto
+                                </span>
+                            {% endif %}
+                        </h6>
                         <div class="text-muted small">
                             <i class="bi bi-person-badge me-1"></i>{{ item.worker_name }}<br>
                             <i class="bi bi-calendar me-1"></i>{{ item.date }}

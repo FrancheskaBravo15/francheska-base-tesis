@@ -133,13 +133,13 @@
                     <dt class="col-5 text-muted fw-normal">Método</dt>
                     <dd class="col-7">
                         {% if appt.payment_method == 'voucher' %}
-                            <span class="badge bg-warning text-dark">
-                                <i class="bi bi-upload me-1"></i>Comprobante
-                            </span>
+                            <span class="badge bg-warning text-dark"><i class="bi bi-upload me-1"></i>Comprobante</span>
                         {% elif appt.payment_method == 'payphone' %}
-                            <span class="badge bg-success">
-                                <i class="bi bi-phone me-1"></i>Payphone
-                            </span>
+                            <span class="badge bg-success"><i class="bi bi-phone me-1"></i>Payphone</span>
+                        {% elif appt.payment_method == 'efectivo' %}
+                            <span class="badge bg-secondary"><i class="bi bi-cash me-1"></i>Efectivo</span>
+                        {% elif appt.payment_method == 'transferencia' %}
+                            <span class="badge bg-info text-dark"><i class="bi bi-bank me-1"></i>Transferencia</span>
                         {% else %}
                             <span class="text-muted">—</span>
                         {% endif %}

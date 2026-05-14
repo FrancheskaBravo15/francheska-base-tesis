@@ -253,8 +253,10 @@ class WorkerService:
             if day_name not in worker.availability or not worker.availability[day_name]:
                 return {"success": True, "slots": [], "message": "La trabajadora no labora ese día"}
 
-            # Minutos actuales del día — usados para filtrar horas pasadas cuando la fecha es hoy
-            current_minutes = now.hour * 60 + now.minute if date_obj.date() == now.date() else -1
+            # Para reservas del mismo día se exige al menos 2 horas de anticipación
+            ADVANCE_MINUTES = 120
+            current_minutes = (now.hour * 60 + now.minute + ADVANCE_MINUTES
+                               if date_obj.date() == now.date() else -1)
 
             # Citas ya reservadas ese día (por fecha real)
             booked = AppointmentRepository.find_by_worker_and_date(worker_id, date_str)
@@ -278,7 +280,7 @@ class WorkerService:
                 while t + duration_minutes <= range_end:
                     slot_start = t
                     slot_end   = t + duration_minutes
-                    # Omitir slots que ya comenzaron o pasaron (solo si es hoy)
+                    # Omitir slots dentro de las próximas 2 horas (solo si es hoy)
                     if slot_start <= current_minutes:
                         t += step
                         continue

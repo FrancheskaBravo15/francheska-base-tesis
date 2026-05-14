@@ -11,6 +11,18 @@ cart_bp = Blueprint('cart', __name__, url_prefix='/cart')
 @login_required
 def view_cart():
     user_id = session.get("user_id")
+
+    from datetime import date as _date
+    today_str = _date.today().isoformat()
+
+    purge = CartService.purge_expired_items(user_id)
+    if purge["count"] > 0:
+        flash(
+            f"Se eliminaron {purge['count']} reserva(s) vencida(s) de tu carrito: "
+            + ", ".join(purge["removed"]) + ". Por favor selecciona nuevas fechas.",
+            "warning"
+        )
+
     result  = CartService.get_cart(user_id)
     items   = result.get("items", [])
     total   = result.get("total", 0)
@@ -35,13 +47,13 @@ def view_cart():
         else:
             standalone.append({"index": idx, "item": item})
 
-    # Generar clientTransactionId para Payphone (se guarda en sesión en /checkout/payphone)
     payphone_token    = os.getenv('PAYPHONE_TOKEN', '')
     payphone_store_id = os.getenv('PAYPHONE_STORE_ID', '')
 
     return render_template('/views/cart/cart.html',
                            items=items,
                            total=total,
+                           today_str=today_str,
                            promo_groups=list(promo_groups.values()),
                            standalone_items=standalone,
                            payphone_token=payphone_token,
@@ -103,8 +115,15 @@ def remove_promotion(promotion_id):
 def checkout_voucher():
     """Checkout con comprobante de pago."""
     user_id = session.get("user_id")
-    voucher = request.files.get('voucher')
 
+    validation = CartService.validate_cart(user_id)
+    if not validation["valid"]:
+        for msg in validation["conflicts"]:
+            flash(msg, "danger")
+        flash("Corrige los conflictos antes de proceder al pago.", "warning")
+        return redirect(url_for('cart.view_cart'))
+
+    voucher = request.files.get('voucher')
     if not voucher or not voucher.filename:
         flash("Debes subir un comprobante de pago.", "danger")
         return redirect(url_for('cart.view_cart'))
@@ -139,6 +158,13 @@ def checkout_payphone():
     result  = CartService.get_cart(user_id)
     if not result.get('count'):
         flash("El carrito está vacío.", "warning")
+        return redirect(url_for('cart.view_cart'))
+
+    validation = CartService.validate_cart(user_id)
+    if not validation["valid"]:
+        for msg in validation["conflicts"]:
+            flash(msg, "danger")
+        flash("Corrige los conflictos antes de proceder al pago.", "warning")
         return redirect(url_for('cart.view_cart'))
 
     client_tx_id = uuid.uuid4().hex

@@ -9,14 +9,32 @@ worker_bp = Blueprint('worker', __name__, url_prefix='/worker')
 @worker_bp.route('/dashboard', methods=['GET'])
 @role_required('worker')
 def dashboard():
+    from datetime import date, timedelta
     user_id = session.get("user_id")
     result  = WorkerService.get_worker_by_user_id(user_id)
     history = WorkerService.get_worker_history(user_id)
-    today_appts = [a for a in history.get("appointments", []) if a["status"] == "confirmada"]
+    all_appts = history.get("appointments", [])
+
+    today_str = date.today().isoformat()
+    week_end  = (date.today() + timedelta(days=7)).isoformat()
+
+    active_statuses = {"confirmada", "en_curso"}
+
+    today_appointments    = [a for a in all_appts if a["date"] == today_str and a["status"] in active_statuses]
+    upcoming_appointments = [a for a in all_appts if today_str < a["date"] <= week_end and a["status"] == "confirmada"]
+    upcoming_appointments.sort(key=lambda a: (a["date"], a["start_time"]))
+
+    total_completed = sum(1 for a in all_appts if a["status"] == "completada")
+    week_count      = len(today_appointments) + len(upcoming_appointments)
+
     return render_template('/views/worker/dashboard.html',
                            worker=result.get("worker"),
-                           today_appointments=today_appts,
-                           total_earned=history.get("total_earned", 0))
+                           today_appointments=today_appointments,
+                           upcoming_appointments=upcoming_appointments,
+                           total_earned=history.get("total_earned", 0),
+                           total_completed=total_completed,
+                           week_count=week_count,
+                           today_str=today_str)
 
 @worker_bp.route('/schedule', methods=['GET', 'POST'])
 @role_required('worker')
@@ -60,6 +78,14 @@ def appointments():
 @role_required('worker')
 def complete_appointment(appointment_id):
     result = AppointmentService.complete_appointment(appointment_id)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('worker.appointments'))
+
+@worker_bp.route('/appointments/<appointment_id>/no-show', methods=['POST'])
+@role_required('worker')
+def no_show(appointment_id):
+    user_id = session.get("user_id")
+    result  = AppointmentService.mark_no_show(appointment_id, user_id)
     flash(result["message"], 'success' if result["success"] else 'danger')
     return redirect(url_for('worker.appointments'))
 

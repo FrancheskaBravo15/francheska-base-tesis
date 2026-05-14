@@ -1,79 +1,104 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% block title %}Mi Panel - Trabajadora{% endblock %}
 
 {% block body %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="fw-bold mb-0">
-        <i class="bi bi-person-badge me-2 text-danger"></i>
-        Bienvenida, {{ worker.first_name if worker else current_user.first_name }}
-    </h3>
+    <div>
+        <h3 class="fw-bold mb-0">
+            <i class="bi bi-person-badge me-2 text-danger"></i>
+            Bienvenida, {{ worker.first_name if worker else current_user.first_name }}
+        </h3>
+        <small class="text-muted">{{ today_str }}</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('worker.schedule') }}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-clock me-1"></i>Mi Horario
+        </a>
+        <a href="{{ url_for('worker.appointments') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-list-ul me-1"></i>Historial
+        </a>
+    </div>
 </div>
 
-<div class="row g-4 mb-4">
-    <div class="col-sm-6 col-lg-3">
-        <div class="card border-0 shadow-sm text-center py-3">
-            <i class="bi bi-calendar-check text-success" style="font-size:2rem;"></i>
-            <div class="fs-4 fw-bold mt-1">{{ today_appointments|length }}</div>
-            <div class="text-muted small">Citas Activas</div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-lg-3">
-        <div class="card border-0 shadow-sm text-center py-3">
-            <i class="bi bi-cash-coin text-danger" style="font-size:2rem;"></i>
-            <div class="fs-4 fw-bold mt-1 text-danger">${{ "%.2f"|format(total_earned) }}</div>
-            <div class="text-muted small">Total Recaudado</div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-lg-3">
-        <div class="card border-0 shadow-sm text-center py-3">
-            <i class="bi bi-scissors" style="font-size:2rem;color:#7C4A6B;"></i>
-            <div class="fs-5 fw-bold mt-1">{{ worker.specialties|join(', ') if worker and worker.specialties else 'N/A' }}</div>
-            <div class="text-muted small">Especialidades</div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-lg-3">
+<!-- Tarjetas de resumen -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
         <div class="card border-0 shadow-sm text-center py-3 h-100">
-            <div class="d-flex flex-column align-items-center justify-content-center h-100 gap-2 py-2">
-                <a href="{{ url_for('worker.schedule') }}" class="btn btn-outline-danger btn-sm w-75">
-                    <i class="bi bi-clock me-1"></i>Mi Horario
-                </a>
-                <a href="{{ url_for('worker.appointments') }}" class="btn btn-outline-secondary btn-sm w-75">
-                    <i class="bi bi-calendar-check me-1"></i>Mis Citas
-                </a>
-                <a href="{{ url_for('users.profile') }}" class="btn btn-outline-secondary btn-sm w-75">
-                    <i class="bi bi-person me-1"></i>Mi Perfil
-                </a>
-            </div>
+            <i class="bi bi-calendar-day" style="font-size:2rem;color:#8B3A5E;"></i>
+            <div class="fs-3 fw-bold mt-1">{{ today_appointments|length }}</div>
+            <div class="text-muted small">Citas Hoy</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm text-center py-3 h-100">
+            <i class="bi bi-calendar-week text-primary" style="font-size:2rem;"></i>
+            <div class="fs-3 fw-bold mt-1">{{ week_count }}</div>
+            <div class="text-muted small">Esta Semana</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm text-center py-3 h-100">
+            <i class="bi bi-check2-circle text-success" style="font-size:2rem;"></i>
+            <div class="fs-3 fw-bold mt-1">{{ total_completed }}</div>
+            <div class="text-muted small">Completadas</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card border-0 shadow-sm text-center py-3 h-100">
+            <i class="bi bi-cash-coin text-danger" style="font-size:2rem;"></i>
+            <div class="fs-3 fw-bold mt-1 text-danger">${{ "%.2f"|format(total_earned) }}</div>
+            <div class="text-muted small">Total Recaudado</div>
         </div>
     </div>
 </div>
 
 <!-- Citas de hoy -->
-<h5 class="fw-bold mb-3"><i class="bi bi-calendar-day me-2 text-danger"></i>Citas Pendientes</h5>
+<h5 class="fw-bold mb-3"><i class="bi bi-calendar-day me-2 text-danger"></i>Citas de Hoy</h5>
 {% if today_appointments %}
-    <div class="row g-3">
+    <div class="row g-3 mb-4">
         {% for appt in today_appointments %}
         <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <h6 class="fw-bold mb-0">{{ appt.service_name }}</h6>
-                        <span class="badge bg-success">Confirmada</span>
+                        {% if appt.status == 'en_curso' %}
+                            <span class="badge bg-success">En Curso</span>
+                        {% else %}
+                            <span class="badge" style="background-color:#8B3A5E;">Confirmada</span>
+                        {% endif %}
                     </div>
                     <div class="text-muted small mb-3">
                         <div><i class="bi bi-person me-2"></i>{{ appt.client_name }}</div>
-                        <div><i class="bi bi-calendar me-2"></i>{{ appt.date }}</div>
-                        <div><i class="bi bi-clock me-2"></i>{{ appt.start_time }} - {{ appt.end_time }}</div>
+                        <div><i class="bi bi-clock me-2"></i>{{ appt.start_time }} – {{ appt.end_time }}</div>
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
                         <span class="fw-bold text-danger">${{ "%.2f"|format(appt.total_price) }}</span>
-                        <form method="POST" action="{{ url_for('worker.complete_appointment', appointment_id=appt.appointment_id) }}"
-                              onsubmit="return confirm('¿Marcar cita como completada?')">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button class="btn btn-sm btn-success">
-                                <i class="bi bi-check-circle me-1"></i>Completar
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#rescheduleModal"
+                                    data-appointment-id="{{ appt.appointment_id }}"
+                                    data-service="{{ appt.service_name }}">
+                                <i class="bi bi-arrow-repeat me-1"></i>Reagendar
                             </button>
-                        </form>
+                            <form method="POST"
+                                  action="{{ url_for('worker.complete_appointment', appointment_id=appt.appointment_id) }}"
+                                  onsubmit="return confirm('¿Marcar esta cita como completada?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button class="btn btn-sm btn-success">
+                                    <i class="bi bi-check-circle me-1"></i>Completar
+                                </button>
+                            </form>
+                            <form method="POST"
+                                  action="{{ url_for('worker.no_show', appointment_id=appt.appointment_id) }}"
+                                  onsubmit="return confirm('¿Registrar que la clienta no se presentó?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button class="btn btn-sm btn-outline-secondary" title="No se presentó">
+                                    <i class="bi bi-person-x"></i>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -81,9 +106,130 @@
         {% endfor %}
     </div>
 {% else %}
-    <div class="alert border-0" style="background-color:#F4ECF1;">
-        <i class="bi bi-calendar-check me-2 text-danger"></i>No tienes citas pendientes actualmente.
+    <div class="alert border-0 mb-4" style="background-color:#F4ECF1;">
+        <i class="bi bi-sun me-2 text-danger"></i>No tienes citas programadas para hoy.
         <a href="{{ url_for('worker.schedule') }}" class="text-danger fw-semibold">Configura tu horario</a> para recibir clientes.
     </div>
 {% endif %}
+
+<!-- Próximas citas (próximos 7 días) -->
+{% if upcoming_appointments %}
+<h5 class="fw-bold mb-3"><i class="bi bi-calendar-week me-2 text-primary"></i>Próximas Citas <small class="text-muted fs-6 fw-normal">(próximos 7 días)</small></h5>
+<div class="card border-0 shadow-sm">
+    <div class="list-group list-group-flush">
+        {% for appt in upcoming_appointments %}
+        <div class="list-group-item border-0 py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-center" style="min-width:48px;">
+                        <div class="fw-bold" style="color:#8B3A5E;font-size:1.1rem;">
+                            {{ appt.date.split('-')[2] }}
+                        </div>
+                        <div class="text-muted" style="font-size:0.7rem;text-transform:uppercase;">
+                            {% set months = ['', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] %}
+                            {{ months[appt.date.split('-')[1]|int] }}
+                        </div>
+                    </div>
+                    <div class="vr"></div>
+                    <div>
+                        <div class="fw-semibold small">{{ appt.service_name }}</div>
+                        <div class="text-muted" style="font-size:0.8rem;">
+                            <i class="bi bi-person me-1"></i>{{ appt.client_name }}
+                            <span class="ms-2"><i class="bi bi-clock me-1"></i>{{ appt.start_time }} – {{ appt.end_time }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-semibold text-danger small">${{ "%.2f"|format(appt.total_price) }}</span>
+                    <button class="btn btn-sm btn-outline-secondary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#rescheduleModal"
+                            data-appointment-id="{{ appt.appointment_id }}"
+                            data-service="{{ appt.service_name }}">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Reagendar -->
+<div class="modal fade" id="rescheduleModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-header" style="background-color:#8B3A5E;">
+                <h5 class="modal-title text-white"><i class="bi bi-arrow-repeat me-2"></i>Proponer Reagendamiento</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="rescheduleForm" action="">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Servicio: <strong id="rescheduleService"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nueva Fecha</label>
+                        <input type="date" class="form-control" name="proposed_date" id="proposedDate"
+                               min="{{ today_str }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nuevo Horario</label>
+                        <select class="form-select" name="proposed_start_time" id="proposedSlot" required>
+                            <option value="">Selecciona una fecha primero</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Motivo <span class="text-muted fw-normal">(opcional)</span></label>
+                        <textarea class="form-control" name="reason" rows="2"
+                                  placeholder="Ej: Tengo un imprevisto ese día..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-sm text-white" style="background-color:#8B3A5E;">
+                        <i class="bi bi-send me-1"></i>Enviar Propuesta
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const modal = document.getElementById('rescheduleModal');
+    modal.addEventListener('show.bs.modal', function (e) {
+        const btn = e.relatedTarget;
+        const apptId  = btn.dataset.appointmentId;
+        const service = btn.dataset.service;
+        document.getElementById('rescheduleService').textContent = service;
+        document.getElementById('rescheduleForm').action =
+            `/worker/appointments/${apptId}/reschedule`;
+        document.getElementById('proposedDate').value = '';
+        document.getElementById('proposedSlot').innerHTML =
+            '<option value="">Selecciona una fecha primero</option>';
+    });
+
+    document.getElementById('proposedDate').addEventListener('change', async function () {
+        const date = this.value;
+        if (!date) return;
+        const apptId = document.getElementById('rescheduleForm').action.match(/appointments\/([^/]+)\/reschedule/)[1];
+        const select = document.getElementById('proposedSlot');
+        select.innerHTML = '<option value="">Cargando...</option>';
+        try {
+            const res  = await fetch(`/worker/appointments/${apptId}/slots?date=${date}`);
+            const data = await res.json();
+            if (data.slots && data.slots.length) {
+                select.innerHTML = data.slots
+                    .map(s => `<option value="${s.start}">${s.start} – ${s.end}</option>`).join('');
+            } else {
+                select.innerHTML = '<option value="">Sin disponibilidad ese día</option>';
+            }
+        } catch {
+            select.innerHTML = '<option value="">Error al cargar horarios</option>';
+        }
+    });
+})();
+</script>
 {% endblock %}

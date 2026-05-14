@@ -28,13 +28,15 @@
         <span class="badge bg-secondary fs-6">Completada</span>
     {% elif appt.status == 'cancelada' %}
         <span class="badge bg-danger fs-6">Cancelada</span>
+    {% elif appt.status == 'no_asistio' %}
+        <span class="badge bg-dark fs-6"><i class="bi bi-person-x me-1"></i>No asistió</span>
     {% endif %}
 </div>
 
 {% set status_order = ['pendiente_validacion', 'confirmada', 'en_curso', 'completada'] %}
 {% set current_idx = status_order.index(appt.status) if appt.status in status_order else -1 %}
 
-{% if appt.status != 'cancelada' %}
+{% if appt.status not in ['cancelada', 'no_asistio'] %}
 <!-- ── Timeline ── -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body py-4">
@@ -135,6 +137,10 @@
                             <span class="badge bg-warning text-dark"><i class="bi bi-upload me-1"></i>Comprobante</span>
                         {% elif appt.payment_method == 'payphone' %}
                             <span class="badge bg-success"><i class="bi bi-phone me-1"></i>Payphone</span>
+                        {% elif appt.payment_method == 'efectivo' %}
+                            <span class="badge bg-secondary"><i class="bi bi-cash me-1"></i>Efectivo</span>
+                        {% elif appt.payment_method == 'transferencia' %}
+                            <span class="badge bg-info text-dark"><i class="bi bi-bank me-1"></i>Transferencia</span>
                         {% else %}
                             <span class="text-muted">—</span>
                         {% endif %}
@@ -239,7 +245,7 @@
                 </p>
                 {% endif %}
 
-                {% if appt.status not in ['cancelada', 'completada'] %}
+                {% if appt.status not in ['cancelada', 'completada', 'no_asistio'] %}
                 <hr class="my-2">
                 <button class="btn btn-outline-danger w-100"
                         data-bs-toggle="modal" data-bs-target="#cancelModal">

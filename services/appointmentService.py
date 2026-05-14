@@ -55,6 +55,43 @@ class AppointmentService:
             return {"success": False, "message": f"Error al crear cita: {e}"}
 
     @staticmethod
+    def admin_create_appointment(client_id: str, worker_id: str, service_id: str,
+                                 date: str, start_time: str, notes: str = "",
+                                 payment_method: str = "efectivo") -> Dict:
+        try:
+            service = ServiceRepository.find_by_id(service_id)
+            if not service:
+                return {"success": False, "message": "Servicio no encontrado"}
+            worker = WorkerRepository.find_by_id(worker_id)
+            if not worker or not worker.is_active:
+                return {"success": False, "message": "Trabajadora no disponible"}
+
+            from services.workerService import _time_to_minutes, _minutes_to_time
+            start_mins = _time_to_minutes(start_time)
+            end_mins   = start_mins + service.duration_minutes
+            end_time   = _minutes_to_time(end_mins)
+
+            if AppointmentRepository.has_conflict(worker_id, date, start_time, end_time):
+                return {"success": False, "message": "La trabajadora ya tiene una cita en ese horario"}
+
+            appointment = AppointmentModel(
+                client_id=client_id,
+                worker_id=worker_id,
+                service_id=service_id,
+                date=date,
+                start_time=start_time,
+                end_time=end_time,
+                total_price=service.price,
+                status="confirmada",
+                payment_method=payment_method,
+                notes=notes.strip()
+            )
+            appt_id = AppointmentRepository.create(appointment)
+            return {"success": True, "message": "Cita creada exitosamente", "appointment_id": appt_id}
+        except Exception as e:
+            return {"success": False, "message": f"Error al crear cita: {e}"}
+
+    @staticmethod
     def cancel_appointment(appointment_id: str, client_id: str, reason: str = "") -> Dict:
         try:
             appt = AppointmentRepository.find_by_id(appointment_id)
@@ -90,26 +127,51 @@ class AppointmentService:
 
     @staticmethod
     def complete_appointment(appointment_id: str) -> Dict:
+        from datetime import date as _date
         try:
             appt = AppointmentRepository.find_by_id(appointment_id)
             if not appt:
                 return {"success": False, "message": "Cita no encontrada"}
             if appt.status not in ("confirmada", "en_curso"):
                 return {"success": False, "message": "Solo se pueden completar citas confirmadas o en curso"}
+            if appt.date > _date.today().isoformat():
+                return {"success": False, "message": f"No puedes completar una cita futura (fecha: {appt.date})"}
             AppointmentRepository.update_status(appointment_id, "completada")
             return {"success": True, "message": "Cita marcada como completada"}
         except Exception as e:
             return {"success": False, "message": f"Error al completar cita: {e}"}
 
     @staticmethod
+    def mark_no_show(appointment_id: str, worker_user_id: str) -> Dict:
+        from datetime import date as _date
+        try:
+            appt = AppointmentRepository.find_by_id(appointment_id)
+            if not appt:
+                return {"success": False, "message": "Cita no encontrada"}
+            worker = WorkerRepository.find_by_user_id(worker_user_id)
+            if not worker or appt.worker_id != worker.id:
+                return {"success": False, "message": "No tienes permiso para modificar esta cita"}
+            if appt.status not in ("confirmada", "en_curso"):
+                return {"success": False, "message": "Solo se puede registrar inasistencia en citas confirmadas o en curso"}
+            if appt.date > _date.today().isoformat():
+                return {"success": False, "message": f"No puedes registrar inasistencia en una cita futura (fecha: {appt.date})"}
+            AppointmentRepository.update_status(appointment_id, "no_asistio")
+            return {"success": True, "message": "Inasistencia registrada"}
+        except Exception as e:
+            return {"success": False, "message": f"Error al registrar inasistencia: {e}"}
+
+    @staticmethod
     def start_appointment(appointment_id: str) -> Dict:
         """Marca la cita como en curso (trabajadora/admin)."""
+        from datetime import date as _date
         try:
             appt = AppointmentRepository.find_by_id(appointment_id)
             if not appt:
                 return {"success": False, "message": "Cita no encontrada"}
             if appt.status != "confirmada":
                 return {"success": False, "message": "Solo se puede iniciar una cita confirmada"}
+            if appt.date > _date.today().isoformat():
+                return {"success": False, "message": f"No puedes iniciar una cita futura (fecha: {appt.date})"}
             AppointmentRepository.update_status(appointment_id, "en_curso")
             return {"success": True, "message": "Cita marcada como en curso"}
         except Exception as e:
@@ -529,6 +591,101 @@ class AppointmentService:
             return {"success": True, "appointments": result}
         except Exception as e:
             return {"success": False, "appointments": [], "message": f"Error: {e}"}
+
+    @staticmethod
+    def expire_overdue_pending() -> Dict:
+        """
+        Maneja citas vencidas sin procesar:
+
+        - pendiente_reagenda con fecha propuesta pasada → se AUTO-CANCELA.
+          No hubo pago, solo una propuesta que el cliente ignoró.
+
+        - pendiente_validacion con fecha pasada → NO se cancela automáticamente.
+          El cliente ya pagó. El admin debe decidir manualmente (validar tarde
+          o rechazar y devolver el dinero). Solo se devuelve el conteo para
+          mostrar una alerta urgente en el panel.
+        """
+        import threading
+        from datetime import date as _date
+
+        today = _date.today().isoformat()
+        expired = 0
+        overdue_paid = 0
+        cancelled_combos = set()
+
+        try:
+            # 1. pendiente_reagenda vencida → cancelar automáticamente
+            for appt in AppointmentRepository.find_overdue_pending_reschedule(today):
+                if appt.combo_instance_id:
+                    if appt.combo_instance_id in cancelled_combos:
+                        continue
+                    cancelled_combos.add(appt.combo_instance_id)
+                    AppointmentRepository.cancel_by_combo_instance_admin(
+                        appt.combo_instance_id,
+                        "Propuesta de reagendamiento vencida: el cliente no respondió"
+                    )
+                else:
+                    AppointmentRepository.update_data(appt.id, {
+                        "status": "cancelada",
+                        "cancel_reason": "Propuesta de reagendamiento vencida: el cliente no respondió"
+                    })
+                expired += 1
+
+                email, first_name = _client_email_and_name(appt.client_id)
+                if email:
+                    service = ServiceRepository.find_by_id(appt.service_id)
+                    worker  = WorkerRepository.find_by_id(appt.worker_id)
+                    wp      = PersonRepository.find_by_user_id(worker.user_id) if worker else None
+                    threading.Thread(
+                        target=EmailService.send_appointment_cancelled,
+                        args=(email, first_name, {
+                            "service_name":   service.name if service else "—",
+                            "worker_name":    f"{wp.first_name} {wp.last_name}" if wp else "—",
+                            "date":           appt.proposed_date or appt.date,
+                            "start_time":     appt.proposed_start_time or appt.start_time,
+                            "end_time":       appt.proposed_end_time or appt.end_time,
+                            "total_price":    appt.total_price,
+                            "cancel_reason":  "La propuesta de reagendamiento venció sin respuesta",
+                            "promotion_name": appt.promotion_name,
+                        }),
+                        daemon=True
+                    ).start()
+
+            # 2. pendiente_validacion con fecha pasada → NO cancelar, notificar una sola vez
+            seen_combos = set()
+            for appt in AppointmentRepository.find_pending_validation():
+                if appt.date < today:
+                    if appt.combo_instance_id:
+                        if appt.combo_instance_id in seen_combos:
+                            continue
+                        seen_combos.add(appt.combo_instance_id)
+                    overdue_paid += 1
+
+                    if not appt.overdue_notified:
+                        AppointmentRepository.update_data(appt.id, {"overdue_notified": True})
+
+                        email, first_name = _client_email_and_name(appt.client_id)
+                        if email:
+                            service = ServiceRepository.find_by_id(appt.service_id)
+                            worker  = WorkerRepository.find_by_id(appt.worker_id)
+                            wp      = PersonRepository.find_by_user_id(worker.user_id) if worker else None
+                            threading.Thread(
+                                target=EmailService.send_overdue_voucher_notice,
+                                args=(email, first_name, {
+                                    "service_name":   service.name if service else "—",
+                                    "worker_name":    f"{wp.first_name} {wp.last_name}" if wp else "—",
+                                    "date":           appt.date,
+                                    "start_time":     appt.start_time,
+                                    "end_time":       appt.end_time,
+                                    "total_price":    appt.total_price,
+                                    "promotion_name": appt.promotion_name,
+                                }),
+                                daemon=True
+                            ).start()
+
+            return {"expired": expired, "overdue_paid": overdue_paid}
+        except Exception as e:
+            return {"expired": 0, "overdue_paid": 0, "error": str(e)}
 
     @staticmethod
     def get_all_appointments() -> Dict:

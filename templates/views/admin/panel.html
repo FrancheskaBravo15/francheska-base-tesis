@@ -2,8 +2,11 @@
 {% block title %}Panel Admin - Shirley Buenaño{% endblock %}
 
 {% block body %}
-<div class="d-flex align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="fw-bold mb-0"><i class="bi bi-speedometer2 me-2 text-danger"></i>Panel de Administración</h3>
+    <a href="{{ url_for('admin.reports') }}" class="btn btn-danger btn-sm">
+        <i class="bi bi-printer me-1"></i>Generar Reporte
+    </a>
 </div>
 
 <!-- ── KPIs ── -->
@@ -241,6 +244,7 @@ const STATUS_LABELS = {
     en_curso:             'En Curso',
     pendiente_validacion: 'Pend. Validación',
     pendiente_reagenda:   'Pend. Reagenda',
+    no_asistio:           'No asistió',
 };
 const STATUS_COLORS = {
     confirmada:           '#4caf50',
@@ -249,6 +253,7 @@ const STATUS_COLORS = {
     en_curso:             '#2196f3',
     pendiente_validacion: '#ff9800',
     pendiente_reagenda:   '#ffc107',
+    no_asistio:           '#607d8b',
 };
 const PAYMENT_COLORS = { payphone: '#ffc107', voucher: '#4caf50', otro: '#9e9e9e' };
 const MONTH_NAMES    = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
@@ -333,6 +338,7 @@ function buildCharts(days) {
     const totalAppts    = data.length;
     const completadas   = data.filter(r => r.status === 'completada').length;
     const canceladas    = data.filter(r => r.status === 'cancelada').length;
+    const noAsistio     = data.filter(r => r.status === 'no_asistio').length;
     const ingresos      = data.reduce((s, r) => s + r.price, 0);
     const tasa          = totalAppts ? Math.round(completadas / totalAppts * 100) : 0;
     document.getElementById('summaryBox').innerHTML = `
@@ -348,6 +354,10 @@ function buildCharts(days) {
             <div class="d-flex justify-content-between border-bottom pb-2">
                 <span class="text-muted">Canceladas</span>
                 <span class="fw-bold text-danger">${canceladas}</span>
+            </div>
+            <div class="d-flex justify-content-between border-bottom pb-2">
+                <span class="text-muted">No asistió</span>
+                <span class="fw-bold text-secondary">${noAsistio}</span>
             </div>
             <div class="d-flex justify-content-between border-bottom pb-2">
                 <span class="text-muted">Ingresos</span>

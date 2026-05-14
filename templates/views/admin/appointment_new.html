@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% block title %}Nueva Cita - Admin{% endblock %}
+
+{% block body %}
+<div class="d-flex align-items-center gap-3 mb-4">
+    <a href="{{ url_for('admin.appointments') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Volver
+    </a>
+    <h3 class="fw-bold mb-0"><i class="bi bi-calendar-plus me-2 text-danger"></i>Nueva Cita</h3>
+</div>
+
+<div class="row justify-content-center">
+<div class="col-lg-8">
+<div class="card border-0 shadow-sm">
+    <div class="card-header py-3 px-4" style="background-color:#8B3A5E;">
+        <h5 class="mb-0 text-white"><i class="bi bi-pencil-square me-2"></i>Datos de la Cita</h5>
+    </div>
+    <div class="card-body p-4">
+        <form method="POST" action="{{ url_for('admin.new_appointment') }}" id="newApptForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- Cliente -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Cliente <span class="text-danger">*</span></label>
+                <select class="form-select" name="client_id" required>
+                    <option value="">Selecciona una clienta...</option>
+                    {% for c in clients %}
+                    <option value="{{ c.id }}">{{ c.first_name }} {{ c.last_name }} — {{ c.email }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Servicio -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Servicio <span class="text-danger">*</span></label>
+                <select class="form-select" name="service_id" id="serviceSelect" required>
+                    <option value="">Selecciona un servicio...</option>
+                    {% for s in services %}
+                    <option value="{{ s.id }}"
+                            data-price="{{ s.price }}"
+                            data-duration="{{ s.duration_minutes }}"
+                            data-category="{{ s.category }}">
+                        {{ s.name }} — ${{ "%.2f"|format(s.price) }} ({{ s.duration_minutes }} min)
+                    </option>
+                    {% endfor %}
+                </select>
+                <div id="serviceInfo" class="mt-2 d-none">
+                    <span class="badge bg-danger-subtle text-danger me-2" id="serviceCategory"></span>
+                    <span class="text-muted small">Duración: <strong id="serviceDuration"></strong> min &nbsp;|&nbsp; Precio: <strong id="servicePrice" class="text-danger"></strong></span>
+                </div>
+            </div>
+
+            <!-- Trabajadora -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Trabajadora <span class="text-danger">*</span></label>
+                <select class="form-select" name="worker_id" id="workerSelect" required disabled>
+                    <option value="">Selecciona un servicio primero</option>
+                </select>
+                <div class="form-text" id="workerHint"></div>
+            </div>
+
+            <!-- Fecha -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Fecha <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" name="date" id="dateInput"
+                       min="{{ today_str if today_str else '' }}" required>
+            </div>
+
+            <!-- Horario -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Horario <span class="text-danger">*</span></label>
+                <select class="form-select" name="start_time" id="slotSelect" required disabled>
+                    <option value="">Selecciona servicio, trabajadora y fecha primero</option>
+                </select>
+                <div id="slotSpinner" class="d-none mt-2">
+                    <div class="spinner-border spinner-border-sm text-danger me-2"></div>
+                    <small class="text-muted">Buscando horarios disponibles...</small>
+                </div>
+            </div>
+
+            <!-- Método de pago -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Método de Pago <span class="text-danger">*</span></label>
+                <select class="form-select" name="payment_method" required>
+                    <option value="efectivo">Efectivo (pago en persona)</option>
+                    <option value="transferencia">Transferencia bancaria</option>
+                    <option value="payphone">Payphone</option>
+                </select>
+            </div>
+
+            <!-- Notas -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Notas <span class="text-muted fw-normal">(opcional)</span></label>
+                <textarea class="form-control" name="notes" rows="2"
+                          placeholder="Indicaciones especiales, preferencias del cliente..."></textarea>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('admin.appointments') }}" class="btn btn-outline-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-danger" id="submitBtn" disabled>
+                    <i class="bi bi-calendar-plus me-1"></i>Crear Cita
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+
+<script>
+(function () {
+    const ALL_WORKERS = {{ workers | tojson }};
+
+    const serviceSelect = document.getElementById('serviceSelect');
+    const workerSelect  = document.getElementById('workerSelect');
+    const workerHint    = document.getElementById('workerHint');
+    const dateInput     = document.getElementById('dateInput');
+    const slotSelect    = document.getElementById('slotSelect');
+    const slotSpinner   = document.getElementById('slotSpinner');
+    const submitBtn     = document.getElementById('submitBtn');
+    const serviceInfo   = document.getElementById('serviceInfo');
+
+    serviceSelect.addEventListener('change', function () {
+        const opt = this.options[this.selectedIndex];
+        resetSlots();
+        resetWorker();
+
+        if (!opt.value) {
+            serviceInfo.classList.add('d-none');
+            workerSelect.disabled = true;
+            workerSelect.innerHTML = '<option value="">Selecciona un servicio primero</option>';
+            workerHint.textContent = '';
+            return;
+        }
+
+        document.getElementById('serviceCategory').textContent = opt.dataset.category || '';
+        document.getElementById('serviceDuration').textContent = opt.dataset.duration || '';
+        document.getElementById('servicePrice').textContent    = '$' + parseFloat(opt.dataset.price).toFixed(2);
+        serviceInfo.classList.remove('d-none');
+
+        const category = opt.dataset.category;
+        const matched  = ALL_WORKERS.filter(w => w.specialties && w.specialties.includes(category));
+
+        if (matched.length === 0) {
+            workerSelect.innerHTML = '<option value="">Sin trabajadoras para esta categoría</option>';
+            workerSelect.disabled  = true;
+            workerHint.textContent = 'No hay trabajadoras activas con especialidad en ' + category;
+        } else {
+            workerSelect.innerHTML = '<option value="">Selecciona una trabajadora...</option>' +
+                matched.map(w => `<option value="${w.worker_id}">${w.first_name} ${w.last_name}</option>`).join('');
+            workerSelect.disabled  = false;
+            workerHint.textContent = matched.length + ' trabajadora(s) disponible(s) para ' + category;
+        }
+    });
+
+    workerSelect.addEventListener('change', function () {
+        resetSlots();
+        loadSlots();
+    });
+
+    dateInput.addEventListener('change', function () {
+        resetSlots();
+        loadSlots();
+    });
+
+    function resetWorker() {
+        workerSelect.value = '';
+    }
+
+    function resetSlots() {
+        slotSelect.innerHTML = '<option value="">Selecciona trabajadora y fecha primero</option>';
+        slotSelect.disabled  = true;
+        submitBtn.disabled   = true;
+    }
+
+    async function loadSlots() {
+        const serviceId = serviceSelect.value;
+        const workerId  = workerSelect.value;
+        const date      = dateInput.value;
+        if (!serviceId || !workerId || !date) return;
+
+        slotSpinner.classList.remove('d-none');
+        try {
+            const res  = await fetch(`/admin/appointments/slots?worker_id=${workerId}&service_id=${serviceId}&date=${date}`);
+            const data = await res.json();
+            if (data.slots && data.slots.length) {
+                slotSelect.innerHTML = '<option value="">Elige un horario</option>' +
+                    data.slots.map(s => `<option value="${s.start}">${s.start} – ${s.end}</option>`).join('');
+                slotSelect.disabled = false;
+            } else {
+                slotSelect.innerHTML = '<option value="">Sin disponibilidad ese día</option>';
+            }
+        } catch {
+            slotSelect.innerHTML = '<option value="">Error al cargar horarios</option>';
+        } finally {
+            slotSpinner.classList.add('d-none');
+        }
+    }
+
+    slotSelect.addEventListener('change', function () {
+        submitBtn.disabled = !this.value;
+    });
+})();
+</script>
+{% endblock %}

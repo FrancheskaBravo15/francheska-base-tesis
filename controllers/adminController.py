@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, Blueprint, flash
+from flask import render_template, request, redirect, url_for, Blueprint, flash, jsonify
 from utils.authDecorator import role_required
 from services.userService import UserService
 from services.serviceService import ServiceService
@@ -26,6 +26,8 @@ def panel():
     import json
     from collections import defaultdict
     from datetime import datetime, date
+
+    AppointmentService.expire_overdue_pending()
 
     users_result    = UserService.get_all_users_with_persons()
     appts_result    = AppointmentService.get_all_appointments()
@@ -65,6 +67,132 @@ def panel():
     return render_template('/views/admin/panel.html',
                            stats=stats,
                            chart_data=json.dumps(chart_rows, ensure_ascii=False))
+
+
+@admin_bp.route('/reports', methods=['GET'])
+@role_required('admin')
+def reports():
+    from datetime import datetime, date, timedelta
+    from collections import defaultdict
+
+    period = request.args.get('period', '30')
+    try:
+        days = int(period)
+    except ValueError:
+        days = 30
+
+    appts_result    = AppointmentService.get_all_appointments()
+    workers_result  = WorkerService.get_all_workers()
+    users_result    = UserService.get_all_users_with_persons()
+    services_result = ServiceService.get_all_services()
+    all_appts       = appts_result.get("appointments", [])
+
+    if days > 0:
+        cutoff = date.today() - timedelta(days=days)
+        appts = [a for a in all_appts if a.get("created_at") and
+                 (a["created_at"].date() if hasattr(a["created_at"], "date") else
+                  date.fromisoformat(str(a["created_at"])[:10])) >= cutoff]
+    else:
+        appts = all_appts
+
+    # Conteo por estado
+    by_status = defaultdict(int)
+    for a in appts:
+        by_status[a["status"]] += 1
+
+    # Ingresos y citas por trabajadora
+    by_worker = defaultdict(lambda: {"citas": 0, "ingresos": 0.0})
+    for a in appts:
+        w = a.get("worker_name") or "N/A"
+        by_worker[w]["citas"] += 1
+        if a["status"] == "completada":
+            by_worker[w]["ingresos"] += a["total_price"]
+
+    # Citas por categoría
+    by_category = defaultdict(int)
+    for a in appts:
+        by_category[a.get("service_category") or "N/A"] += 1
+
+    # Ingresos por mes
+    by_month = defaultdict(float)
+    for a in appts:
+        if a["status"] == "completada" and a.get("created_at"):
+            dt = a["created_at"]
+            key = dt.strftime("%Y-%m") if hasattr(dt, "strftime") else str(dt)[:7]
+            by_month[key] += a["total_price"]
+
+    total_revenue   = sum(a["total_price"] for a in appts if a["status"] == "completada")
+    total_completed = by_status.get("completada", 0)
+    total_cancelled = by_status.get("cancelada", 0)
+    total_no_show   = by_status.get("no_asistio", 0)
+
+    return render_template('/views/admin/reports.html',
+        period=days,
+        generated_at=datetime.now().strftime("%d/%m/%Y %H:%M"),
+        total_appts=len(appts),
+        total_revenue=total_revenue,
+        total_completed=total_completed,
+        total_cancelled=total_cancelled,
+        total_no_show=total_no_show,
+        total_users=len([u for u in users_result.get("users", []) if u["role"] == "client"]),
+        total_workers=len(workers_result.get("workers", [])),
+        total_services=len(services_result.get("services", [])),
+        by_status=dict(by_status),
+        by_worker=dict(by_worker),
+        by_category=dict(by_category),
+        by_month=dict(sorted(by_month.items())),
+    )
+
+
+@admin_bp.route('/reports/daily', methods=['GET'])
+@role_required('admin')
+def daily_report():
+    from datetime import date as _date, datetime
+    from collections import defaultdict
+    from repositories.appointmentRepository import AppointmentRepository
+    from repositories.personRepository import PersonRepository
+    from repositories.userRepository import UserRepository as UR
+    from repositories.serviceRepository import ServiceRepository
+    from repositories.workerRepository import WorkerRepository
+
+    date_str = request.args.get('date', _date.today().isoformat())
+
+    raw = AppointmentRepository.find_by_date(date_str)
+    appts = [a for a in raw if a.status not in ('cancelada', 'pendiente_reagenda', 'pendiente_validacion')]
+
+    by_worker = defaultdict(list)
+    for appt in appts:
+        worker     = WorkerRepository.find_by_id(appt.worker_id)
+        w_person   = PersonRepository.find_by_user_id(worker.user_id) if worker else None
+        c_person   = PersonRepository.find_by_user_id(appt.client_id)
+        c_user     = UR.find_by_id(appt.client_id)
+        service    = ServiceRepository.find_by_id(appt.service_id)
+
+        worker_name = f"{w_person.first_name} {w_person.last_name}" if w_person else "N/A"
+        by_worker[worker_name].append({
+            "appointment_id": appt.id,
+            "start_time":     appt.start_time,
+            "end_time":       appt.end_time,
+            "client_name":    f"{c_person.first_name} {c_person.last_name}" if c_person else "N/A",
+            "client_phone":   c_person.phone if c_person else "—",
+            "client_email":   c_user.email if c_user else "—",
+            "service_name":   service.name if service else "N/A",
+            "service_category": service.category if service else "N/A",
+            "promotion_name": appt.promotion_name,
+            "notes":          appt.notes or "",
+            "status":         appt.status,
+            "total_price":    appt.total_price,
+        })
+
+    for worker_name in by_worker:
+        by_worker[worker_name].sort(key=lambda x: x["start_time"])
+
+    return render_template('/views/admin/reports_daily.html',
+        date_str=date_str,
+        generated_at=datetime.now().strftime("%d/%m/%Y %H:%M"),
+        by_worker=dict(sorted(by_worker.items())),
+        total_appts=len(appts),
+    )
 
 
 # ──────────────────────────────────────────
@@ -337,10 +465,89 @@ def worker_schedule(worker_id):
 # ──────────────────────────────────────────
 # GESTIÓN DE CITAS
 # ──────────────────────────────────────────
+@admin_bp.route('/appointments/new', methods=['GET', 'POST'])
+@role_required('admin')
+def new_appointment():
+    if request.method == 'POST':
+        client_id      = request.form.get('client_id', '').strip()
+        service_id     = request.form.get('service_id', '').strip()
+        worker_id      = request.form.get('worker_id', '').strip()
+        date           = request.form.get('date', '').strip()
+        start_time     = request.form.get('start_time', '').strip()
+        payment_method = request.form.get('payment_method', 'efectivo').strip()
+        notes          = request.form.get('notes', '').strip()
+
+        if not all([client_id, service_id, worker_id, date, start_time]):
+            flash("Todos los campos son obligatorios.", 'danger')
+            return redirect(url_for('admin.new_appointment'))
+
+        result = AppointmentService.admin_create_appointment(
+            client_id=client_id, worker_id=worker_id, service_id=service_id,
+            date=date, start_time=start_time, notes=notes,
+            payment_method=payment_method
+        )
+        flash(result["message"], 'success' if result["success"] else 'danger')
+        if result["success"]:
+            return redirect(url_for('admin.appointment_detail',
+                                    appointment_id=result["appointment_id"]))
+        return redirect(url_for('admin.new_appointment'))
+
+    from datetime import date as _date
+    clients  = [u for u in UserService.get_all_users_with_persons().get("users", [])
+                if u["role"] == "client" and u["is_active"]]
+    services = ServiceService.get_all_services(only_active=True).get("services", [])
+    workers  = [w for w in WorkerService.get_all_workers().get("workers", [])
+                if w["is_active"]]
+
+    return render_template('/views/admin/appointment_new.html',
+                           clients=clients, services=services, workers=workers,
+                           today_str=_date.today().isoformat())
+
+
+@admin_bp.route('/appointments/slots', methods=['GET'])
+@role_required('admin')
+def appointment_slots():
+    from repositories.serviceRepository import ServiceRepository
+    worker_id  = request.args.get('worker_id', '').strip()
+    service_id = request.args.get('service_id', '').strip()
+    date       = request.args.get('date', '').strip()
+    if not all([worker_id, service_id, date]):
+        return jsonify({"success": False, "slots": []})
+    try:
+        service = ServiceRepository.find_by_id(service_id)
+        if not service:
+            return jsonify({"success": False, "slots": []})
+        result = WorkerService.get_available_slots(
+            worker_id, date, service.duration_minutes, service.category
+        )
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"success": False, "slots": [], "message": str(e)})
+
+
 @admin_bp.route('/appointments', methods=['GET'])
 @role_required('admin')
 def appointments():
+    expired = AppointmentService.expire_overdue_pending()
+    if expired.get("expired", 0) > 0:
+        flash(
+            f"{expired['expired']} reagendamiento(s) vencido(s) cancelado(s) automáticamente "
+            f"(el cliente no respondió). Se notificó a los clientes.",
+            "warning"
+        )
+    if expired.get("overdue_paid", 0) > 0:
+        flash(
+            f"⚠ {expired['overdue_paid']} cita(s) con comprobante pendiente tienen fecha pasada. "
+            f"El cliente ya pagó — revísalas y decide si validar o rechazar con devolución.",
+            "danger"
+        )
+
     all_appts = AppointmentService.get_all_appointments().get("appointments", [])
+
+    STATUS_PRIORITY = {
+        'no_asistio': 0, 'cancelada': 1, 'pendiente_reagenda': 2,
+        'completada': 3, 'en_curso': 4, 'pendiente_validacion': 5, 'confirmada': 6,
+    }
 
     promo_groups = {}
     standalone   = []
@@ -362,6 +569,11 @@ def appointments():
             promo_groups[cid]["group_total"] = round(
                 promo_groups[cid]["group_total"] + appt["total_price"], 2
             )
+            # Update combo status to reflect worst-case entry status
+            current_priority = STATUS_PRIORITY.get(promo_groups[cid]["status"], 99)
+            entry_priority   = STATUS_PRIORITY.get(appt["status"], 99)
+            if entry_priority < current_priority:
+                promo_groups[cid]["status"] = appt["status"]
         else:
             appt["row_type"] = "standalone"
             standalone.append(appt)
@@ -370,15 +582,21 @@ def appointments():
         if dt is None: return "0000-00-00 00:00:00"
         return dt.strftime("%Y-%m-%d %H:%M:%S") if hasattr(dt, 'strftime') else str(dt)
 
+    def _sort_key(dt):
+        if dt is None or not hasattr(dt, 'strftime'):
+            return __import__('datetime').datetime.min
+        return dt
+
     rows = []
     for g in promo_groups.values():
-        g["sort_key"]       = max(e["created_at"] for e in g["entries"] if e["created_at"])
+        dts = [e["created_at"] for e in g["entries"] if e.get("created_at") and hasattr(e["created_at"], 'strftime')]
+        g["sort_key"]       = max(dts) if dts else __import__('datetime').datetime.min
         g["sort_order_str"] = _dt_str(g["sort_key"])
         g["sort_appt_str"]  = min(f"{e['date']} {e['start_time']}" for e in g["entries"])
         g["detail_id"]      = g["entries"][0]["appointment_id"]
         rows.append(g)
     for a in standalone:
-        a["sort_key"]       = a["created_at"]
+        a["sort_key"]       = _sort_key(a["created_at"])
         a["sort_order_str"] = _dt_str(a["created_at"])
         a["sort_appt_str"]  = f"{a['date']} {a['start_time']}"
         a["detail_id"]      = a["appointment_id"]
@@ -386,10 +604,12 @@ def appointments():
     rows.sort(key=lambda x: x["sort_key"], reverse=True)
 
     from repositories.appointmentRepository import AppointmentRepository
+    from datetime import date as _date
     pending_count = AppointmentRepository.count_pending_validation()
+    today_str     = _date.today().isoformat()
 
     return render_template('/views/admin/appointments.html',
-                           rows=rows, pending_count=pending_count)
+                           rows=rows, pending_count=pending_count, today_str=today_str)
 
 
 @admin_bp.route('/appointments/detail/<appointment_id>', methods=['GET'])

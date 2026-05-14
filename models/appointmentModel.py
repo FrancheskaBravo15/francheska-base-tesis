@@ -6,7 +6,8 @@ APPOINTMENT_STATUS = [
     "en_curso",              # cita iniciada
     "completada",
     "cancelada",
-    "pendiente_reagenda"
+    "pendiente_reagenda",
+    "no_asistio"             # la clienta no se presentó
 ]
 
 class AppointmentModel:
@@ -29,7 +30,9 @@ class AppointmentModel:
                  # Cancelación
                  cancel_reason=None,
                  # Reseña
-                 rating=None, review_comment=None, review_date=None):
+                 rating=None, review_comment=None, review_date=None,
+                 # Notificación de comprobante vencido (se envía una sola vez)
+                 overdue_notified=False):
         self.id = id
         self.client_id   = client_id
         self.worker_id   = worker_id
@@ -60,6 +63,7 @@ class AppointmentModel:
         self.rating                 = rating
         self.review_comment         = review_comment
         self.review_date            = review_date
+        self.overdue_notified       = overdue_notified
 
     @classmethod
     def from_dict(cls, data: dict) -> 'AppointmentModel':
@@ -90,6 +94,7 @@ class AppointmentModel:
             rating                  = data.get("rating"),
             review_comment          = data.get("review_comment"),
             review_date             = data.get("review_date"),
+            overdue_notified        = data.get("overdue_notified", False),
         )
         if "_id" in data:
             appt.id = str(data["_id"])
@@ -123,6 +128,7 @@ class AppointmentModel:
             "rating":                   self.rating,
             "review_comment":           self.review_comment,
             "review_date":              self.review_date,
+            "overdue_notified":         self.overdue_notified,
         }
 
     def __repr__(self):

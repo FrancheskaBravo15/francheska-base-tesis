@@ -133,3 +133,47 @@ def profile():
                                         upload_folder=upload_folder)
     flash(result["message"], 'success' if result["success"] else 'danger')
     return redirect(url_for('users.profile'))
+
+
+@user_bp.route('/change-password', methods=['POST'])
+@login_required
+def change_password():
+    user_id          = session.get("user_id")
+    current_password = request.form.get('current_password', '')
+    new_password     = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password', '')
+
+    result = UserService.change_password(user_id, current_password, new_password, confirm_password)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return redirect(url_for('users.profile'))
+
+
+@user_bp.route('/forgot-password', methods=['GET', 'POST'])
+@guest_only
+def forgot_password():
+    if request.method == 'GET':
+        return render_template('/views/users/forgot_password.html')
+
+    email     = request.form.get('email', '').strip().lower()
+    reset_url = url_for('users.reset_password', token='__TOKEN__', _external=True)
+    result    = UserService.request_password_reset(email, reset_url)
+    flash(result["message"], 'success' if result["success"] else 'danger')
+    return render_template('/views/users/forgot_password.html', sent=True)
+
+
+@user_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+@guest_only
+def reset_password(token):
+    if request.method == 'GET':
+        return render_template('/views/users/reset_password.html', token=token)
+
+    new_password     = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password', '')
+
+    result = UserService.reset_password(token, new_password, confirm_password)
+    if result["success"]:
+        flash(result["message"], 'success')
+        return redirect(url_for('users.login'))
+
+    flash(result["message"], 'danger')
+    return render_template('/views/users/reset_password.html', token=token)

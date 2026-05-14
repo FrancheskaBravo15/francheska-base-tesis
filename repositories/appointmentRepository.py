@@ -161,6 +161,30 @@ class AppointmentRepository:
             raise
 
     @classmethod
+    def find_by_date(cls, date_str: str) -> List[AppointmentModel]:
+        try:
+            collection = cls._get_collection()
+            return [AppointmentModel.from_dict(a) for a in
+                    collection.find({"date": date_str}).sort("start_time", 1)]
+        except PyMongoError as e:
+            print(f"Error al buscar citas por fecha: {e}")
+            raise
+
+    @classmethod
+    def find_overdue_pending_reschedule(cls, today_iso: str) -> List[AppointmentModel]:
+        """pendiente_reagenda donde la fecha propuesta ya pasó."""
+        try:
+            collection = cls._get_collection()
+            return [AppointmentModel.from_dict(a) for a in
+                    collection.find({
+                        "status": "pendiente_reagenda",
+                        "proposed_date": {"$lt": today_iso}
+                    })]
+        except PyMongoError as e:
+            print(f"Error al buscar reagendamientos vencidos: {e}")
+            raise
+
+    @classmethod
     def find_all(cls) -> List[AppointmentModel]:
         try:
             collection = cls._get_collection()

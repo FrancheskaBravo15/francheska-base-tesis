@@ -8,7 +8,98 @@ from repositories.appointmentRepository import AppointmentRepository
 from repositories.promotionRepository import PromotionRepository
 from services.workerService import _time_to_minutes, _minutes_to_time, WorkerService
 
+def _items_overlap(a_start: str, a_end: str, b_start: str, b_end: str) -> bool:
+    """True si dos rangos horarios se superponen."""
+    return _time_to_minutes(a_start) < _time_to_minutes(b_end) and \
+           _time_to_minutes(a_end)   > _time_to_minutes(b_start)
+
+
 class CartService:
+
+    @staticmethod
+    def purge_expired_items(user_id: str) -> Dict:
+        """Elimina del carrito los ítems cuya fecha/hora ya pasó. Retorna los eliminados."""
+        from datetime import date as _date, datetime as _dt
+        try:
+            cart = CartRepository.find_by_user_id(user_id)
+            if not cart or not cart.items:
+                return {"removed": [], "count": 0}
+
+            ADVANCE_MINUTES = 120
+            now       = _dt.now()
+            today_str = _date.today().isoformat()
+            now_mins  = now.hour * 60 + now.minute
+
+            def _is_expired(item) -> bool:
+                if item.date < today_str:
+                    return True
+                if item.date == today_str and _time_to_minutes(item.start_time) <= now_mins + ADVANCE_MINUTES:
+                    return True
+                return False
+
+            expired = [item for item in cart.items if _is_expired(item)]
+            if not expired:
+                return {"removed": [], "count": 0}
+
+            cart.items = [item for item in cart.items if not _is_expired(item)]
+            CartRepository.upsert(cart)
+
+            names = [f"'{i.service_name}' ({i.date} {i.start_time})" for i in expired]
+            return {"removed": names, "count": len(expired)}
+        except Exception as e:
+            return {"removed": [], "count": 0}
+
+    @staticmethod
+    def validate_cart(user_id: str) -> Dict:
+        """
+        Valida el carrito completo antes del pago:
+        - fechas/horas ya vencidas
+        - conflictos con citas ya confirmadas en DB
+        - conflictos entre ítems del propio carrito
+        Retorna {"valid": bool, "conflicts": [str]}
+        """
+        from datetime import date as _date, datetime as _dt
+        try:
+            cart = CartRepository.find_by_user_id(user_id)
+            if not cart or not cart.items:
+                return {"valid": True, "conflicts": []}
+
+            ADVANCE_MINUTES = 120
+            conflicts = []
+            items     = cart.items
+            now       = _dt.now()
+            today_str = _date.today().isoformat()
+            now_mins  = now.hour * 60 + now.minute
+
+            for item in items:
+                if item.date < today_str:
+                    conflicts.append(
+                        f"'{item.service_name}' ({item.date}): la fecha de reserva ya pasó — elimínala del carrito"
+                    )
+                elif item.date == today_str and _time_to_minutes(item.start_time) <= now_mins + ADVANCE_MINUTES:
+                    conflicts.append(
+                        f"'{item.service_name}' ({item.date} {item.start_time}): "
+                        f"las reservas del mismo día requieren al menos 2 horas de anticipación — elimínala del carrito"
+                    )
+                elif AppointmentRepository.has_conflict(item.worker_id, item.date, item.start_time, item.end_time):
+                    conflicts.append(
+                        f"'{item.service_name}' ({item.date} {item.start_time}): "
+                        f"la especialista ya tiene otra cita en ese horario"
+                    )
+
+            for i in range(len(items)):
+                for j in range(i + 1, len(items)):
+                    a, b = items[i], items[j]
+                    if a.worker_id == b.worker_id and a.date == b.date:
+                        if _items_overlap(a.start_time, a.end_time, b.start_time, b.end_time):
+                            conflicts.append(
+                                f"'{a.service_name}' y '{b.service_name}' se superponen "
+                                f"con la misma especialista el {a.date}"
+                            )
+
+            return {"valid": len(conflicts) == 0, "conflicts": conflicts}
+        except Exception as e:
+            return {"valid": False, "conflicts": [f"Error al validar: {e}"]}
 
     @staticmethod
     def get_cart(user_id: str) -> Dict:
@@ -32,13 +123,14 @@ class CartService:
             from datetime import datetime as _dt
             date = date.replace("/", "-") if date else date
 
-            # Validar que la fecha/hora sea futura
+            ADVANCE_MINUTES = 120
             now = _dt.now()
             today_str = now.strftime("%Y-%m-%d")
+            now_mins  = now.hour * 60 + now.minute
             if date < today_str:
                 return {"success": False, "message": "No puedes reservar en una fecha pasada"}
-            if date == today_str and _time_to_minutes(start_time) <= now.hour * 60 + now.minute:
-                return {"success": False, "message": "Esa hora ya pasó, elige un horario futuro"}
+            if date == today_str and _time_to_minutes(start_time) <= now_mins + ADVANCE_MINUTES:
+                return {"success": False, "message": "Para reservas del mismo día necesitas al menos 2 horas de anticipación"}
 
             service = ServiceRepository.find_by_id(service_id)
             if not service or not service.is_active:
@@ -56,9 +148,22 @@ class CartService:
             end_mins   = start_mins + service.duration_minutes
             end_time   = _minutes_to_time(end_mins)
 
-            # Verificar disponibilidad en tiempo real
+            # Verificar disponibilidad contra citas confirmadas en DB
             if AppointmentRepository.has_conflict(worker_id, date, start_time, end_time):
-                return {"success": False, "message": "La trabajadora ya tiene una cita en ese horario"}
+                return {"success": False, "message": "La trabajadora ya tiene una cita confirmada en ese horario"}
+
+            # Verificar conflictos contra ítems ya presentes en el carrito
+            existing_cart = CartRepository.find_by_user_id(user_id)
+            if existing_cart:
+                for ci in existing_cart.items:
+                    if ci.worker_id == worker_id and ci.date == date:
+                        if _items_overlap(start_time, end_time, ci.start_time, ci.end_time):
+                            return {
+                                "success": False,
+                                "message": (f"Conflicto con '{ci.service_name}' que ya está en el carrito "
+                                            f"({ci.start_time}–{ci.end_time}). "
+                                            f"Elige otro horario.")
+                            }
 
             worker_person = PersonRepository.find_by_user_id(worker.user_id)
             worker_name   = f"{worker_person.first_name} {worker_person.last_name}" if worker_person else "N/A"
@@ -252,18 +357,20 @@ class CartService:
                     return {"success": False, "message": "Esta promoción ya está en el carrito"}
 
             from datetime import datetime as _dt
+            ADVANCE_MINUTES = 120
             now       = _dt.now()
             today_str = now.strftime("%Y-%m-%d")
+            now_mins  = now.hour * 60 + now.minute
 
             new_items = []
             for i, sel in enumerate(selections):
                 sel_date = (sel.get("date") or "").replace("/", "-")
 
-                # Validar que la fecha/hora sea futura
+                # Validar que la fecha/hora sea futura con 2 horas de anticipación para hoy
                 if sel_date < today_str:
                     return {"success": False, "message": "No puedes reservar en una fecha pasada"}
-                if sel_date == today_str and _time_to_minutes(sel["start_time"]) <= now.hour * 60 + now.minute:
-                    return {"success": False, "message": "Esa hora ya pasó, elige un horario futuro"}
+                if sel_date == today_str and _time_to_minutes(sel["start_time"]) <= now_mins + ADVANCE_MINUTES:
+                    return {"success": False, "message": "Para reservas del mismo día necesitas al menos 2 horas de anticipación"}
 
                 service = ServiceRepository.find_by_id(sel["service_id"])
                 if not service or not service.is_active:

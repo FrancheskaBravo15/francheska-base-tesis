@@ -101,3 +101,41 @@ class UserRepository:
         except PyMongoError as e:
             print(f"Error al actualizar usuario en la BD: {e}")
             raise
+
+    @classmethod
+    def save_reset_token(cls, user_id: str, token: str, expiry) -> None:
+        try:
+            collection = cls._get_collection()
+            collection.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"reset_token": token, "reset_token_expiry": expiry}}
+            )
+        except PyMongoError as e:
+            print(f"Error al guardar token de recuperación: {e}")
+            raise
+
+    @classmethod
+    def find_by_reset_token(cls, token: str) -> Optional[UserModel]:
+        try:
+            from datetime import datetime
+            collection = cls._get_collection()
+            data = collection.find_one({
+                "reset_token": token,
+                "reset_token_expiry": {"$gt": datetime.now()}
+            })
+            return UserModel.from_dict(data) if data else None
+        except PyMongoError as e:
+            print(f"Error al buscar token de recuperación: {e}")
+            raise
+
+    @classmethod
+    def clear_reset_token(cls, user_id: str) -> None:
+        try:
+            collection = cls._get_collection()
+            collection.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$unset": {"reset_token": "", "reset_token_expiry": ""}}
+            )
+        except PyMongoError as e:
+            print(f"Error al limpiar token de recuperación: {e}")
+            raise

@@ -8,6 +8,8 @@ from repositories.personRepository import PersonRepository
 from utils.userUtil import validate_registration_data, validate_login_data
 from services.emailService import EmailService
 import os
+import secrets
+from datetime import datetime, timedelta
 
 ALLOWED_PHOTO_EXT = {"png", "jpg", "jpeg", "webp"}
 
@@ -176,6 +178,66 @@ class UserService:
             return {"success": True, "message": f"Usuario {msg}"}
         except Exception as e:
             return {"success": False, "message": f"Error: {e}"}
+
+    @staticmethod
+    def request_password_reset(email: str, reset_url: str) -> Dict:
+        """Genera token de recuperación y envía el correo."""
+        try:
+            user = UserRepository.find_by_email(email.strip().lower())
+            if not user:
+                # No revelar si el email existe o no
+                return {"success": True, "message": "Si ese correo está registrado, recibirás un enlace en breve."}
+
+            person = PersonRepository.find_by_user_id(user.id)
+            first_name = person.first_name if person else "usuaria"
+
+            token  = secrets.token_urlsafe(32)
+            expiry = datetime.now() + timedelta(hours=1)
+            UserRepository.save_reset_token(user.id, token, expiry)
+
+            full_url = reset_url.replace("__TOKEN__", token)
+            EmailService.send_password_reset(user.email, first_name, full_url)
+
+            return {"success": True, "message": "Si ese correo está registrado, recibirás un enlace en breve."}
+        except Exception as e:
+            return {"success": False, "message": f"Error al procesar la solicitud: {e}"}
+
+    @staticmethod
+    def reset_password(token: str, new_password: str, confirm_password: str) -> Dict:
+        """Valida el token y actualiza la contraseña."""
+        if not token:
+            return {"success": False, "message": "Token inválido."}
+        if len(new_password) < 8:
+            return {"success": False, "message": "La contraseña debe tener al menos 8 caracteres."}
+        if new_password != confirm_password:
+            return {"success": False, "message": "Las contraseñas no coinciden."}
+        try:
+            user = UserRepository.find_by_reset_token(token)
+            if not user:
+                return {"success": False, "message": "El enlace es inválido o ya expiró."}
+            UserRepository.update(user.id, {"password": generate_password_hash(new_password)})
+            UserRepository.clear_reset_token(user.id)
+            return {"success": True, "message": "Contraseña actualizada exitosamente. Ahora puedes iniciar sesión."}
+        except Exception as e:
+            return {"success": False, "message": f"Error al restablecer la contraseña: {e}"}
+
+    @staticmethod
+    def change_password(user_id: str, current_password: str, new_password: str, confirm_password: str) -> Dict:
+        """Cambia la contraseña desde el perfil (requiere la contraseña actual)."""
+        if len(new_password) < 8:
+            return {"success": False, "message": "La nueva contraseña debe tener al menos 8 caracteres."}
+        if new_password != confirm_password:
+            return {"success": False, "message": "Las contraseñas no coinciden."}
+        try:
+            user = UserRepository.find_by_id(user_id)
+            if not user:
+                return {"success": False, "message": "Usuario no encontrado."}
+            if not check_password_hash(user.password, current_password):
+                return {"success": False, "message": "La contraseña actual es incorrecta."}
+            UserRepository.update(user_id, {"password": generate_password_hash(new_password)})
+            return {"success": True, "message": "Contraseña cambiada exitosamente."}
+        except Exception as e:
+            return {"success": False, "message": f"Error al cambiar la contraseña: {e}"}
 
     @staticmethod
     def login_user(email: str, password: str) -> Dict:
